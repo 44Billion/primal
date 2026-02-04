@@ -8,18 +8,23 @@ let imageToElementMap = {};
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(IMAGE_CACHE).then(async (cache) => {
-      // Fetch the manifest
-      const manifestResponse = await fetch('/manifest.json');
-      const manifest = await manifestResponse.json();
+      try {
+        // Fetch the manifest
+        const manifestResponse = await fetch('/manifest.json');
+        const manifest = await manifestResponse.json();
 
-      // Extract asset URLs from manifest
-      const assetUrls = Object.values(manifest)
-        .filter(entry => entry.file && entry.file.match(/\.(png|jpg|jpeg|svg|webp)$/))
-        .map(entry => `/${entry.file}`);
+        // Extract asset URLs from manifest
+        const assetUrls = Object.values(manifest)
+          .filter(entry => entry.file && entry.file.match(/\.(png|jpg|jpeg|svg|webp)$/))
+          .map(entry => `/${entry.file}`);
 
-      const uniqueAssetUrls = [...new Set(assetUrls)];
+        const uniqueAssetUrls = [...new Set(assetUrls)];
 
-      return cache.addAll(uniqueAssetUrls);
+        return cache.addAll(uniqueAssetUrls);
+      }
+      catch (e) {
+        console.log('Error fertching manifest: ', e)
+      }
     }).catch((e => {
       if (self.location.hostname === 'localhost') {
         console.log('Error prefetching cached images: ', e);
@@ -62,9 +67,11 @@ self.addEventListener('fetch', (event) => {
           return fetch(event.request).then(fetchResponse => {
             return fetchResponse;
           }).catch(error => {
-            // console.error('FAILED TO FETCH IMAGE: ', url);
+            console.error('FAILED TO FETCH IMAGE: ', url);
           });
         });
+      }).catch(error => {
+        console.error('FAILED TO OPEN IMAGE: ', url);
       })
     );
   }
