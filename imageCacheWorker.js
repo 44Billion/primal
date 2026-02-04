@@ -55,7 +55,7 @@ self.addEventListener('fetch', (event) => {
 
           if (isLocal) {
             // Fetch fresh image
-            return fetch(event.request).then(fetchResponse => {
+            return fetch(event.request, { mode: 'no-cors' }).then(fetchResponse => {
               cache.put(event.request, fetchResponse.clone());
               return fetchResponse;
             }).catch(error => {
@@ -65,6 +65,7 @@ self.addEventListener('fetch', (event) => {
 
 
           return fetch(event.request).then(fetchResponse => {
+            cache.put(event.request, fetchResponse.clone());
             return fetchResponse;
           }).catch(error => {
             console.error('FAILED TO FETCH IMAGE: ', url);
@@ -82,18 +83,27 @@ self.addEventListener('message', event => {
     const url = event.data.url;
 
     event.waitUntil(new Promise(async (resolve) => {
-      const cache = await caches.open(IMAGE_CACHE);
-      const response = await cache.match(url);
-      if (!!response) {
-        resolve();
-      }
-      else {
-        try {
-          await cache.add(url);
-          resolve();
-        } catch {
+      try {
+        const cache = await caches.open(IMAGE_CACHE);
+        const response = await cache.match(url);
+        if (!!response) {
           resolve();
         }
+        else {
+          try {
+            // Fetch with no-cors for cross-origin avatars
+            const fetchResponse = await fetch(url, { mode: 'no-cors' });
+            await cache.put(url, fetchResponse);
+            resolve();
+          } catch {
+            console.error('Failed to cache avatar:', url, error);
+            resolve();
+          }
+        }
+      }
+      catch (e) {
+        console.error('Failed to open cache: ', e);
+        resolve();
       }
     }));
   }
