@@ -2153,7 +2153,7 @@ export const initAccountStore: AccountStore = {
     }
   }
 
-  export const findActiveLogin = (extensionAttempt = 0) => {
+  export const findActiveLogin = async (extensionAttempt = 0) => {
     const sec = readSecFromStorage();
 
     if (sec) {
@@ -2172,8 +2172,12 @@ export const initAccountStore: AccountStore = {
     }
 
     if (nostr) {
-      loginUsingExtension();
-      return;
+      const maybePk = await nostr.peekPublicKey?.();
+
+      if (maybePk) {
+        loginUsingExtension(0, maybePk);
+        return;
+      }
     }
 
     loginGuest();
@@ -2186,7 +2190,7 @@ export const initAccountStore: AccountStore = {
     updateAccountStore('isKeyLookupDone', () => true);
   };
 
-  export const loginUsingExtension = async (extensionAttempt = 0) => {
+  export const loginUsingExtension = async (extensionAttempt = 0, pubkey?: string) => {
     const win = window as NostrWindow;
     const nostr = win.nostr;
 
@@ -2199,13 +2203,25 @@ export const initAccountStore: AccountStore = {
       }
 
       logInfo('Nostr extension retry attempt: ', extensionAttempt)
-      setTimeout(() => loginUsingExtension(extensionAttempt + 1), 250);
+      setTimeout(() => loginUsingExtension(extensionAttempt + 1, pubkey), 250);
       return;
     }
 
     try {
       setLoginType('extension');
-      const key = await getPublicKey();
+      let key = pubkey;
+
+      if (!key) {
+        try {
+          key = await win.nostr?.peekPublicKey?.();
+        } catch (e) {
+          // Ignore error from peek
+        }
+      }
+
+      if (!key) {
+        key = await getPublicKey();
+      }
 
       if (key === undefined) {
         setTimeout(() => {

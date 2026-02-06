@@ -2,6 +2,10 @@ import { defineConfig } from 'vite';
 import solidPlugin from 'vite-plugin-solid';
 import packageJson from './package.json';
 import { VitePWA } from 'vite-plugin-pwa';
+// @ts-ignore
+import fs from 'fs';
+// @ts-ignore
+import path from 'path';
 
 
 export default defineConfig({
@@ -21,7 +25,19 @@ export default defineConfig({
         type: 'module',
         /* other options */
       }
-    })
+    }),
+    {
+      name: 'copy-favicon',
+      apply: 'build',
+      closeBundle() {
+        const src = path.resolve('src/assets/favicon.ico');
+        const dest = path.resolve('dist/favicon.ico');
+
+        if (fs.existsSync(src)) {
+          fs.copyFileSync(src, dest);
+        }
+      },
+    },
   ],
   server: {
     port: 3000,
