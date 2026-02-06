@@ -796,6 +796,7 @@ interface SendPaymentResponse {
 
 export type NostrExtension = {
   getPublicKey: () => Promise<string>,
+  peekPublicKey?: () => Promise<string | undefined>,
   getRelays: () => Promise<NostrRelays>,
   signEvent: (event: NostrRelayEvent) => Promise<NostrRelaySignedEvent>,
   nip04: {
