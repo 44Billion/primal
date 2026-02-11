@@ -44,15 +44,17 @@ export const generateClientConnectionUrl = (): string => {
 
   if (!clientPubkey) return '';
 
-  const n = localStorage.getItem('clientConnectionUrl') ||
+  let n = localStorage.getItem('clientConnectionUrl') ||
     nip46.createNostrConnectURI({
       clientPubkey,
-      relays: ['wss://relay.primal.net'],
+      relays: ['wss://nrs.primal.net'],
       secret: `sec-${uuidv4()}`,
       name: 'PrimalWeb',
       url: location.origin,
       image: `${location.origin}${primalLogo}`,
     });
+
+  n += '&nwc=1';
 
   localStorage.setItem('clientConnectionUrl', n);
 

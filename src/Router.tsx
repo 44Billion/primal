@@ -13,7 +13,7 @@ import { useMediaContext } from './contexts/MediaContext';
 import { useNotificationsContext } from './contexts/NotificationsContext';
 import { useSearchContext } from './contexts/SearchContext';
 import { useDMContext } from './contexts/DMContext';
-import { generateNsec, nip19 } from './lib/nTools';
+import { generateNsec, nip19, nip44 } from './lib/nTools';
 import Blossom from './pages/Settings/Blossom';
 import { accountStore } from './stores/accountStore';
 
@@ -116,6 +116,7 @@ const AppRouter: Component = () => {
       thread,
       genNsec,
       nip19,
+      nip44,
     };
 
     primalWindow.onPrimalComponentMount = () => {};
