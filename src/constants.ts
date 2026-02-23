@@ -578,3 +578,5 @@ export const settingsDescription = {
   getNWCSettings: 'get_app_subsettings_nwc',
   setNWCSettings: 'set_app_subsettings_nwc',
 }
+
+export const primalRemoteWalletLabel = 'Primal Remote Wallet';

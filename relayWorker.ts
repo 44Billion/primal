@@ -68,9 +68,9 @@ self.addEventListener('message', (e: MessageEvent<WorkerMessageType>) => {
 
             subInfo.close();
             self.postMessage({
-              event: eInfo,
               secret,
               pubkey,
+              event: eInfo,
             })
           }
         }

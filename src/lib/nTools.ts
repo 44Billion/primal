@@ -5,6 +5,8 @@ import {
   verifyEvent,
   SimplePool,
   Event,
+  EventTemplate,
+  VerifiedEvent,
 } from 'nostr-tools';
 
 import * as nip46 from 'nostr-tools/nip46'
@@ -12,6 +14,9 @@ import * as nip46 from 'nostr-tools/nip46'
 // @ts-ignore
 import { AbstractRelay as Relay } from 'nostr-tools/abstract-relay';
 import { Relay as RelayFactory } from 'nostr-tools';
+// import { AbstractSimplePool, SubCloser } from 'nostr-tools/lib/types/abstract-pool';
+// import { Handlerinformation, NostrConnect } from 'nostr-tools/lib/types/kinds';
+import { Signer } from 'nostr-tools/lib/types/signer';
 
 import {
   nip04,
@@ -48,6 +53,13 @@ export {
   verifyEvent,
   finalizeEvent,
   SimplePool,
+  // AbstractSimplePool,
+  // Handlerinformation,
+  // NostrConnect,
 };
 
 export type NostrEvent = Event;
+export type NostrEventTemplate = EventTemplate;
+export type NostrVerifiedEvent = VerifiedEvent;
+// export type NostrSubCloser = SubCloser;
+export type NostrSigner = Signer;

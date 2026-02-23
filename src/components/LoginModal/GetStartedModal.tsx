@@ -1,28 +1,23 @@
 import { useIntl } from '@cookbook/solid-intl';
-import { Component, createEffect, createSignal, Match, Show, Switch } from 'solid-js';
+import { Component, createEffect, createSignal, Show, } from 'solid-js';
 
 import { login as tLogin } from '../../translations';
 
 import styles from './LoginModal.module.scss';
 import { hookForDev } from '../../lib/devTools';
-import ButtonPrimary from '../Buttons/ButtonPrimary';
-import { nip19, nip46, SimplePool } from '../../lib/nTools';
-import { storeSec } from '../../lib/localStore';
+import { SimplePool } from '../../lib/nTools';
+import * as nip46 from '../../lib/nip46/nip46';
 import AdvancedSearchDialog from '../AdvancedSearch/AdvancedSearchDialog';
-import { accountStore, doAfterLogin, loginUsingExtension, loginUsingLocalNsec, loginUsingNpub, setLoginType, setPublicKey, setSec, showCreateAccount, showLogin } from '../../stores/accountStore';
-import { Tabs } from '@kobalte/core/tabs';
+import { doAfterLogin, setLoginType, setPublicKey, showCreateAccount, showLogin } from '../../stores/accountStore';
 
 import { useToastContext } from '../Toaster/Toaster';
 import QrCode from '../QrCode/QrCode';
-import { appSigner, generateAppKeys, generateClientConnectionUrl, getAppSK, storeBunker } from '../../lib/PrimalNip46';
+import { generateAppKeys, generateClientConnectionUrl, getAppSK, storeBunker } from '../../lib/PrimalNip46';
 import { logWarning } from '../../lib/logger';
 import { useSettingsContext } from '../../contexts/SettingsContext';
-import { encryptWithPin, setCurrentPin } from '../../lib/PrimalNostr';
 
-import ssDark from '../../assets/images/signer_screenshot_dark.png';
-import ssLight from '../../assets/images/signer_screenshot_light.png';
-import { useAppContext } from '../../contexts/AppContext';
-import ButtonLink from '../Buttons/ButtonLink';
+import { addNWC, connectToNWCWallet } from '../../pages/Settings/NostrWalletConnect';
+import { primalRemoteWalletLabel } from '../../constants';
 
 export const BUNKER_RESPONSE_TIMEOUT = 8_000;
 
@@ -35,11 +30,8 @@ const GetStartedModal: Component<{
   const intl = useIntl();
   const toaster = useToastContext();
   const settings = useSettingsContext();
-  const app = useAppContext();
 
   const [clientUrl, setClientUrl] = createSignal('');
-
-  const [copying, setCopying] = createSignal(false);
 
   let bunkerInput: HTMLInputElement | undefined;
 
@@ -50,6 +42,8 @@ const GetStartedModal: Component<{
 
   let pool: SimplePool | undefined;
   let signer: nip46.BunkerSigner | undefined;
+
+  let nwc: string | undefined;
 
   createEffect(() => {
     if (!props.open) {
@@ -81,7 +75,7 @@ const GetStartedModal: Component<{
 
       if (!signer) {
         pool = new SimplePool();
-        signer = await nip46.BunkerSigner.fromURI(sec, cUrl, { pool });
+        signer = await nip46.BunkerSigner.fromURI(sec, cUrl, { pool, setNWC: (n) => nwc= n, });
       }
 
       storeBunker(signer);
@@ -90,6 +84,11 @@ const GetStartedModal: Component<{
       setLoginType('nip46');
       setPublicKey(pk);
       doAfterLogin(pk);
+
+      if (nwc) {
+        addNWC(primalRemoteWalletLabel, nwc);
+        connectToNWCWallet(primalRemoteWalletLabel, nwc);
+      }
 
       props.onAbort && props.onAbort();
     } catch (reason) {

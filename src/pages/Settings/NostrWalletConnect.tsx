@@ -23,8 +23,99 @@ import { setNWCSettings } from '../../lib/settings';
 import { APP_ID } from '../../App';
 import { subsTo } from '../../sockets';
 import { accountStore, insertIntoNWCList, setActiveNWC, updateNWCList } from '../../stores/accountStore';
+import { primalRemoteWalletLabel } from '../../constants';
 
 export type WalletStatus = 'inactive' | 'active' | 'connected';
+
+
+export const addNWC = async (walletName: string, url: string) => {
+  if (!accountStore.publicKey) return;
+  const index = accountStore.nwcList.findIndex(n => n[0] === walletName);
+
+  let uri = encodeURIComponent(url);
+
+  const enc = await encrypt(accountStore.publicKey, uri);
+
+  if (index > -1) {
+    insertIntoNWCList([walletName, enc], index);
+
+    saveNWC(accountStore.publicKey, accountStore.nwcList);
+    updateNWCSettings();
+    return;
+  }
+
+  insertIntoNWCList([walletName, enc]);
+  saveNWC(accountStore.publicKey, accountStore.nwcList);
+  updateNWCSettings();
+};
+
+export const removeNWC = (walletName: string) => {
+  if (!accountStore?.publicKey) return;
+
+  updateNWCList(accountStore.nwcList.filter(l => l[0] !== walletName));
+
+  setActiveNWC([]);
+
+  saveNWC(accountStore.publicKey, accountStore.nwcList);
+  saveNWCActive(accountStore.publicKey);
+
+  updateNWCSettings();
+};
+
+export const updateNWCSettings = () => {
+  const subId = `update_nwc_settings_${APP_ID}`;
+
+  const unsub = subsTo(subId, {
+    onEose: () => { unsub(); }
+  })
+
+  setNWCSettings(subId, {
+    nwcList: accountStore.nwcList || [],
+    nwcActive: accountStore.activeNWC || [],
+  });
+}
+
+
+export const connectToNWCWallet = async (
+  walletName: string,
+  url: string,
+  updateStatus?: (name: string, status: WalletStatus) => void,
+) => {
+  const pubkey = accountStore.publicKey;
+
+  if (!pubkey) return;
+
+  let uri = `${url}`;
+
+  if (!uri.startsWith('nostr+walletconnect')) {
+    try {
+      uri = await decrypt(pubkey, uri);
+    } catch (e) {
+      uri = '';
+    }
+  }
+
+  uri = encodeURIComponent(uri);
+
+  const enc = await encrypt(pubkey, uri);
+
+  const active = loadNWCActive(pubkey);
+
+  if (active && active.length > 0 && active[0] !== walletName) {
+    updateStatus?.(active[0], 'active');
+  }
+
+  saveNWCActive(pubkey, walletName, enc);
+  setActiveNWC([walletName, enc]);
+
+  updateStatus?.(walletName, 'connected');
+
+  const uriConfig = decodeNWCUri(uri);
+
+  sendNWCInfoEvent(uriConfig);
+
+  updateNWCSettings();
+};
 
 const NostrWalletConnect: Component = () => {
 
@@ -73,118 +164,51 @@ const NostrWalletConnect: Component = () => {
   }
 
   const checkActiveWallet = (pubkey: string) => {
-      const walletSocket = new WebSocket('wss://wallet.primal.net/v1');
-
-      walletSocket.addEventListener('open', async () => {
-        logInfo('WALLET SOCKET OPENED');
-        const isActive = await checkPrimalWalletActive(pubkey, walletSocket);
-
-        if (walletStatus['primal'] === 'connected') {
-          return;
-        }
-
-        if (isActive) {
-          setWalletStatus('primal', () => 'active');
-        } else {
-          setWalletStatus('primal', () => 'inactive')
-        }
-
-      });
-      walletSocket.addEventListener('close', () => {
-        logInfo('WALLET SOCKET CLOSED');
-      });
-  }
-
-  const connectToPrimalWallet = () => {
-    if (!accountStore.publicKey) return;
-
     const walletSocket = new WebSocket('wss://wallet.primal.net/v1');
 
     walletSocket.addEventListener('open', async () => {
       logInfo('WALLET SOCKET OPENED');
-      const uri = await connectPrimalWalletActive('Primal Web App', walletSocket);
+      const isActive = await checkPrimalWalletActive(pubkey, walletSocket);
 
-      if (uri.length === 0) {
+      if (walletStatus['primal'] === 'connected') {
         return;
       }
 
-      connectToNWCWallet('primal', uri);
+      if (isActive) {
+        setWalletStatus('primal', () => 'active');
+      } else {
+        setWalletStatus('primal', () => 'inactive')
+      }
+
     });
     walletSocket.addEventListener('close', () => {
       logInfo('WALLET SOCKET CLOSED');
     });
-  };
+  }
 
-  const connectToNWCWallet = async (walletName: string, url: string) => {
-    const pubkey = accountStore.publicKey;
+  const updateStatus = (name: string, status: WalletStatus) => {
+    setWalletStatus(name, status)
+  }
 
-    if (!pubkey) return;
+  // const connectToPrimalWallet = () => {
+  //   if (!accountStore.publicKey) return;
 
-    let uri = `${url}`;
+  //   const walletSocket = new WebSocket('wss://wallet.primal.net/v1');
 
-    if (!uri.startsWith('nostr+walletconnect')) {
-      try {
-        uri = await decrypt(pubkey, uri);
-      } catch (e) {
-        uri = '';
-      }
-    }
+  //   walletSocket.addEventListener('open', async () => {
+  //     logInfo('WALLET SOCKET OPENED');
+  //     const uri = await connectPrimalWalletActive('Primal Web App', walletSocket);
 
-    uri = encodeURIComponent(uri);
+  //     if (uri.length === 0) {
+  //       return;
+  //     }
 
-    const enc = await encrypt(pubkey, uri);
-
-    const active = loadNWCActive(pubkey);
-
-    if (active && active.length > 0 && active[0] !== walletName) {
-      setWalletStatus(active[0], 'active');
-    }
-
-    saveNWCActive(pubkey, walletName, enc);
-    setActiveNWC([walletName, enc]);
-
-    setWalletStatus(walletName, () => 'connected');
-
-    const uriConfig = decodeNWCUri(uri);
-
-    sendNWCInfoEvent(uriConfig);
-
-    updateNWCSettings();
-  };
-
-  const addNWC = async (walletName: string, url: string) => {
-    if (!accountStore.publicKey) return;
-    const index = accountStore.nwcList.findIndex(n => n[0] === walletName);
-
-    let uri = encodeURIComponent(url);
-
-    const enc = await encrypt(accountStore.publicKey, uri);
-
-    if (index > -1) {
-      insertIntoNWCList([walletName, enc], index);
-
-      saveNWC(accountStore.publicKey, accountStore.nwcList);
-      updateNWCSettings();
-      return;
-    }
-
-    insertIntoNWCList([walletName, enc]);
-    saveNWC(accountStore.publicKey, accountStore.nwcList);
-    updateNWCSettings();
-  };
-
-  const removeNWC = (walletName: string) => {
-    if (!accountStore?.publicKey) return;
-
-    updateNWCList(accountStore.nwcList.filter(l => l[0] !== walletName));
-
-    setActiveNWC([]);
-
-    saveNWC(accountStore.publicKey, accountStore.nwcList);
-    saveNWCActive(accountStore.publicKey);
-
-    updateNWCSettings();
-  };
+  //     connectToNWCWallet('primal', uri, updateStatus);
+  //   });
+  //   walletSocket.addEventListener('close', () => {
+  //     logInfo('WALLET SOCKET CLOSED');
+  //   });
+  // };
 
   const disconnectNWC = (walletName: string) => {
     if (!accountStore?.publicKey) return;
@@ -202,29 +226,17 @@ const NostrWalletConnect: Component = () => {
     setNewNWCLabel(() => '');
   };
 
-  const updateNWCSettings = () => {
-    const subId = `update_nwc_settings_${APP_ID}`;
 
-    const unsub = subsTo(subId, {
-      onEose: () => { unsub(); }
-    })
-
-    setNWCSettings(subId, {
-      nwcList: accountStore.nwcList || [],
-      nwcActive: accountStore.activeNWC || [],
-    });
-  }
-
-  const primalWalletDesc = () => {
-    switch (walletStatus['primal']) {
-      case 'connected':
-        return "Your Primal Wallet is connected";
-      case 'active':
-        return "Your Primal Wallet is ready to be connected";
-      default:
-        return "Your Primal Wallet is not yet active";
-    }
-  }
+  // const primalWalletDesc = () => {
+  //   switch (walletStatus['primal']) {
+  //     case 'connected':
+  //       return "Your Primal Wallet is connected";
+  //     case 'active':
+  //       return "Your Primal Wallet is ready to be connected";
+  //     default:
+  //       return "Your Primal Wallet is not yet active";
+  //   }
+  // }
 
   return (
     <div>
@@ -243,22 +255,22 @@ const NostrWalletConnect: Component = () => {
 
       <div class={styles.settingsContentFullBorderless}>
         <div class={styles.walletList}>
-          <NWCItem
+          {/* <NWCItem
             logo={logo}
             name="Primal"
             desc={primalWalletDesc()}
             status={walletStatus['primal']}
             onConnect={() => connectToPrimalWallet()}
             onDisconnect={() => disconnectNWC('primal')}
-          />
+          /> */}
           <For each={accountStore.nwcList}>
             {([name, uri]) => (
               <NWCItem
-                logo={nwc}
+                logo={name === primalRemoteWalletLabel ? logo : nwc}
                 name={name}
                 desc={'Nostr Wallet Connect'}
                 status={walletStatus[name] || 'active'}
-                onConnect={() => connectToNWCWallet(name, uri)}
+                onConnect={() => connectToNWCWallet(name, uri, updateStatus)}
                 onRemove={() => removeNWC(name)}
                 onDisconnect={() => disconnectNWC(name)}
               />
@@ -318,7 +330,7 @@ const NostrWalletConnect: Component = () => {
           </ButtonSecondary>
           <ButtonPrimary
             onClick={() => {
-              connectToNWCWallet(newNWCLabel(), newNWC());
+              connectToNWCWallet(newNWCLabel(), newNWC(), updateStatus);
               addNWC(newNWCLabel(), newNWC());
               clearNewNWC();
               setOpenNewWallet(false);
