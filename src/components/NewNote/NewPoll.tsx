@@ -42,7 +42,7 @@ export const emptyPoll = (): PollState => ({
   pollKind: Kind.UserPoll,
   pollType: 'singlechoice',
   endsAt: getNowTimestamp(),
-  pollLength: { days: '0 days', hours: '0 hours', minutes: '0 minutes' },
+  pollLength: { days: '1 days', hours: '0 hours', minutes: '0 minutes' },
   zapLimits: { min: 10, max: 100 },
 
   focusedInput: '',
