@@ -1,4 +1,4 @@
-import { Component, createSignal, For, Show } from "solid-js";
+import { Component, createEffect, createSignal, For, on, onMount, Show } from "solid-js";
 import { TextField } from "@kobalte/core/text-field";
 import { getNowTimestamp } from "../../lib/dates";
 import { createStore, SetStoreFunction } from "solid-js/store";
@@ -27,7 +27,10 @@ export type PollState = {
   pollType: 'singlechoice' | 'multiplechoice',
   endsAt: number,
   pollLength: PollLength,
-  zapLimits: { min: number, max: number }
+  zapLimits: { min: number, max: number },
+
+  focusedInput: string,
+  externalInput: string,
 }
 
 export const emptyPoll = (): PollState => ({
@@ -40,7 +43,10 @@ export const emptyPoll = (): PollState => ({
   pollType: 'singlechoice',
   endsAt: getNowTimestamp(),
   pollLength: { days: '0 days', hours: '0 hours', minutes: '0 minutes' },
-  zapLimits: { min: 10, max: 100 }
+  zapLimits: { min: 10, max: 100 },
+
+  focusedInput: '',
+  externalInput: '',
 })
 
 export const POLL_ANSWER_LIMIT = 25;
@@ -72,7 +78,7 @@ const NewPoll: Component<{
   pollState: PollState,
   setPollState: SetStoreFunction<PollState>,
 }> = (props) => {
-  const [focusedOption, setFocusedOption] = createSignal(-1);
+  // const [focusedOption, props.setPollState]'focusedChoice',  = createSignal(-1);
 
   const addChoice = () => {
     props.setPollState('options', props.pollState.options.length, () => ({ id: uuidv4(), label: '' }))
@@ -86,7 +92,36 @@ const NewPoll: Component<{
   let minZapLimit: HTMLInputElement | undefined;
   let maxZapLimit: HTMLInputElement | undefined;
 
-  const [focusedLimit, setFocusedLimit] = createSignal('');
+  // const [focusedLimit, props.setPollState]'foucusedZapLimit',  = createSignal('');
+
+  createEffect(on(() => props.pollState.externalInput, (ext) => {
+    if (ext.length === 0) return;
+
+    const input = document.querySelector(`[data-input-id=${props.pollState.focusedInput}]`) as HTMLInputElement | HTMLTextAreaElement;
+    if (!input) return;
+
+    let msg = input.value;
+
+
+    let cursor = input.selectionStart;
+
+    if (cursor === null) return;
+
+    const value = msg.slice(0, cursor) + `${ext} ` + msg.slice(cursor);
+
+    input.value = value;
+
+    // Calculate new cursor position
+    input.selectionEnd = cursor + 3;
+    input.focus();
+    props.setPollState('externalInput', '');
+  }));
+
+  onMount(() => {
+    const input = document.documentElement.querySelector('[data-input-id=question') as HTMLInputElement | HTMLTextAreaElement;
+
+    input?.focus();
+  })
 
   return (
     <div class={styles.newPoll}>
@@ -99,6 +134,8 @@ const NewPoll: Component<{
           autoResize
           rows={1}
           placeholder="Ask a question..."
+          onFocus={() => props.setPollState('focusedInput', 'question')}
+          data-input-id="question"
         />
       </TextField>
 
@@ -107,7 +144,7 @@ const NewPoll: Component<{
           {(option, index) => (
             <div
               class={styles.pollOption}
-              data-focused={index() === focusedOption()}
+              data-focused={index() === parseInt((props.pollState.focusedInput.split('-') || [])[1])}
             >
               <TextField
                 value={option.label}
@@ -124,13 +161,13 @@ const NewPoll: Component<{
                 <TextField.Label class={styles.optionCaption}>
                   <div
                     class={styles.captionLabel}
-                    data-focused={index() === focusedOption()}
+                    data-focused={index() === parseInt((props.pollState.focusedInput.split('-') || [])[1])}
                   >
                     Choice {index() + 1}
                   </div>
                   <div
                     class={styles.charCounter}
-                    data-focused={index() === focusedOption()}
+                    data-focused={index() === parseInt((props.pollState.focusedInput.split('-') || [])[1])}
                   >
                     {option.label.length}/{POLL_ANSWER_LIMIT}
                   </div>
@@ -138,12 +175,14 @@ const NewPoll: Component<{
                 <div class={styles.optionInputLayout}>
                   <TextField.Input
                     class={styles.optionInput}
-                    onFocus={() => setTimeout(() => setFocusedOption(index()), 10)}
-                    onBlur={() => setFocusedOption(-1)}
+                    data-input-id={`choice-${index()}`}
+                    onFocus={() => props.setPollState('focusedInput', `choice-${index()}`)}
+                    // onFocus={() => setTimeout(() => props.setPollState('focusedChoice', index()), 10)}
+                    // onBlur={() => props.setPollState('focusedChoice', -1)}
                   />
                   <button
                     class={styles.removeOption}
-                    data-focused={index() === focusedOption()}
+                    data-focused={index() === parseInt((props.pollState.focusedInput.split('-') || [])[1])}
                     onClick={() => {
                       removeChoice(option)
                     }}
@@ -211,7 +250,7 @@ const NewPoll: Component<{
             <TextField
               class={styles.limitInputWrapper}
               value={`${props.pollState.zapLimits.min}`}
-              data-focused={focusedLimit() === 'min'}
+              data-focused={props.pollState.focusedInput === 'limit-min'}
               onChange={v => {
                 const num = parseInt(v);
                 if (isNaN(num))return;
@@ -229,8 +268,9 @@ const NewPoll: Component<{
               <TextField.Input
                 class={styles.limitInput}
                 ref={minZapLimit}
-                onFocus={() => setTimeout(() => setFocusedLimit('min'), 10)}
-                onBlur={() => setFocusedLimit('')}
+                onFocus={() => props.setPollState('focusedInput', 'limit-min')}
+                // onFocus={() => setTimeout(() => props.setPollState('foucusedZapLimit', 'min'), 10)}
+                // onBlur={() => props.setPollState('foucusedZapLimit', '')}
               />
               <div class={styles.zapUnit}>sats</div>
               <div class={styles.limitType}>Minimum</div>
@@ -239,7 +279,7 @@ const NewPoll: Component<{
             <TextField
               class={styles.limitInputWrapper}
               value={`${props.pollState.zapLimits.max}`}
-              data-focused={focusedLimit() === 'max'}
+              data-focused={props.pollState.focusedInput === 'limit-max'}
               onChange={v => {
                 const num = parseInt(v);
                 if (isNaN(num))return;
@@ -257,8 +297,9 @@ const NewPoll: Component<{
               <TextField.Input
                 class={styles.limitInput}
                 ref={maxZapLimit}
-                onFocus={() => setTimeout(() => setFocusedLimit('max'), 10)}
-                onBlur={() => setFocusedLimit('')}
+                onFocus={() => props.setPollState('focusedInput', 'limit-max')}
+                // onFocus={() => setTimeout(() => props.setPollState('foucusedZapLimit', 'max'), 10)}
+                // onBlur={() => props.setPollState('foucusedZapLimit', '')}
               />
               <div class={styles.zapUnit}>sats</div>
               <div class={styles.limitType}>Maximum</div>

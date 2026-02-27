@@ -307,7 +307,7 @@ const EditBox: Component<{
       return false;
     }
 
-    if (!isMentioning() && !isEmojiInput() && e.key === ':') {
+    if (!isCreatingPoll() && !isMentioning() && !isEmojiInput() && e.key === ':') {
       // Ignore if `@` is a part of a word
       if (textArea.selectionStart > 0 && ![' ', '\r\n', '\r', '\n'].includes(textArea.value[textArea.selectionStart-1])) {
         return false;
@@ -431,7 +431,7 @@ const EditBox: Component<{
     }
 
 
-    if (!isMentioning() && e.key === '@') {
+    if (!isCreatingPoll() && !isMentioning() && e.key === '@') {
       mentionCursorPosition = getCaretCoordinates(textArea, textArea.selectionStart);
 
       // Ignore if `@` is a part of a word
@@ -1982,6 +1982,11 @@ const EditBox: Component<{
   const [isPickingEmoji, setIsPickingEmoji] = createSignal(false);
 
   const addSelectedEmoji = (emoji: EmojiOption) => {
+    if (isCreatingPoll()) {
+      setPollState('externalInput', emoji?.name || '');
+      return;
+    }
+
     if (!textArea || !emoji) {
       return;
     }
@@ -2154,6 +2159,12 @@ const EditBox: Component<{
     return isPostingInProgress() || fileToUpload() || message().trim().length === 0;
   }
 
+  const isEmojiDisabled = () => {
+    if (!isCreatingPoll()) return false;
+
+    return pollState.focusedInput !== 'question' && !pollState.focusedInput.startsWith('choice');
+  }
+
   return (
     <div
       id={props.id}
@@ -2177,7 +2188,10 @@ const EditBox: Component<{
             <NewPoll
               pollState={pollState}
               setPollState={setPollState}
-              onRemovePoll={() => setIsCreatingPoll(false)}
+              onRemovePoll={() => {
+                setIsCreatingPoll(false);
+                setPollState(emptyPoll());
+              }}
             />
           </div>
         </Match>
@@ -2382,6 +2396,7 @@ const EditBox: Component<{
           </div>
           <div class={styles.editorOption}>
             <ButtonGhost
+              disabled={isEmojiDisabled()}
               highlight={isPickingEmoji()}
               onClick={() => {
                 setIsPickingEmoji((v) => !v);
