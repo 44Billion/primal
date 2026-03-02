@@ -58,21 +58,12 @@ const Layout: Component<any> = (props) => {
 
   createEffect(() => {
     const newNote = document.getElementById('new_note_input');
-    const newNoteTextArea = document.getElementById('new_note_text_area') as HTMLTextAreaElement;
 
     if (accountStore.showNewNoteForm) {
-      if (!newNote || !newNoteTextArea) {
-        return;
-      }
       newNote?.classList.add(styles.animatedShow);
-      newNoteTextArea?.focus();
     }
     else {
-      if (!newNote || !newNoteTextArea) {
-        return;
-      }
       newNote?.classList.remove(styles.animatedShow);
-      newNoteTextArea.value = '';
     }
   });
 

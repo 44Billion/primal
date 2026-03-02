@@ -1,3 +1,4 @@
+import { emptyPoll, PollState } from "../components/NewNote/NewPoll";
 import { TopicStat } from "../megaFeeds";
 import { convertToUser, userName } from "../stores/profile";
 import { EmojiOption, MembershipStatus, NostrRelays, NostrRelaySignedEvent, NostrStats, PrimalArticleFeed, PrimalDVM, PrimalFeed, PrimalUser, SelectionOption, SenderMessageCount, UserRelation, UserStats } from "../types/primal";
@@ -58,6 +59,9 @@ export type LocalStore = {
   legendCustomization: LegendCustomizationConfig | undefined,
   membershipStatus: MembershipStatus | undefined,
   eventQueue: NostrRelaySignedEvent[] | undefined,
+  pollDraft: Record<string, PollState>,
+  pollDraftUserRefs: Record<string, Record<string, PrimalUser>>,
+  pollDraftMediaTags: string[][],
 };
 
 export type UploadTime = {
@@ -121,6 +125,9 @@ export const emptyStorage: LocalStore = {
   legendCustomization: undefined,
   membershipStatus: undefined,
   eventQueue: undefined,
+  pollDraft: {},
+  pollDraftUserRefs: {},
+  pollDraftMediaTags: [],
 }
 
 export const storageName = (pubkey?: string) => {
@@ -970,3 +977,93 @@ export const saveEventQueue = (pubkey: string, eventQueue: NostrRelaySignedEvent
 
   setStorage(pubkey, store);
 };
+
+export const savePollDraft = (pubkey: string | undefined, poll: PollState, replyTo?: string) => {
+  if (!pubkey) {
+    return;
+  }
+
+  const store = getStorage(pubkey);
+
+  const key = replyTo || 'root';
+
+  if (!store.pollDraft || typeof store.pollDraft === 'string') {
+    store.pollDraft = {};
+  }
+
+  store.pollDraft[key] = {...poll};
+
+  setStorage(pubkey, store);
+}
+
+export const readPollDraft = (pubkey: string | undefined, replyTo?: string) => {
+  if (!pubkey) {
+    return emptyPoll();
+  }
+
+  const store = getStorage(pubkey);
+
+  if (!store.pollDraft || typeof store.pollDraft === 'string') {
+    store.pollDraft = {};
+  }
+
+  const key = replyTo || 'root';
+
+  return store.pollDraft[key] || emptyPoll();
+}
+
+export const savePollDraftUserRefs = (pubkey: string | undefined, refs: Record<string, PrimalUser>, replyTo?: string) => {
+  if (!pubkey) {
+    return;
+  }
+
+  const store = getStorage(pubkey);
+
+  const key = replyTo || 'root';
+
+  if (!store.pollDraftUserRefs || typeof store.pollDraftUserRefs === 'string') {
+    store.pollDraftUserRefs = {};
+  }
+
+  store.pollDraftUserRefs[key] = refs;
+
+  setStorage(pubkey, store);
+}
+
+export const readPollDraftUserRefs = (pubkey: string | undefined, replyTo?: string) => {
+  if (!pubkey) {
+    return {};
+  }
+
+  const store = getStorage(pubkey);
+
+  if (!store.pollDraftUserRefs || typeof store.pollDraftUserRefs === 'string') {
+    store.pollDraftUserRefs = {};
+  }
+
+  const key = replyTo || 'root';
+
+  return store.noteDraftUserRefs[key] || {};
+}
+
+export const savePollDraftMediaTags = (pubkey: string | undefined, mediaTags: string[][]) => {
+  if (!pubkey) {
+    return;
+  }
+
+  const store = getStorage(pubkey);
+
+  store.pollDraftMediaTags = [...mediaTags];
+
+  setStorage(pubkey, store);
+}
+
+export const readPollDraftMediaTags = (pubkey: string | undefined) => {
+  if (!pubkey) {
+    return [];
+  }
+
+  const store = getStorage(pubkey);
+
+  return store.pollDraftMediaTags;
+}

@@ -1015,17 +1015,98 @@ export const note = {
     optionYes: {
       id: 'note.saveNoteDraft.yes',
       defaultMessage: 'Save',
-      description: 'Confirm saving not as draft',
+      description: 'Confirm saving note as draft',
     },
     optionNo: {
       id: 'note.saveNoteDraft.no',
       defaultMessage: 'Discard',
-      description: 'Decline saving not as draft',
+      description: 'Decline saving note as draft',
     },
     optionCancel: {
       id: 'note.saveNoteDraft.cancel',
       defaultMessage: 'Continue Editing',
       description: 'Continue editing the note',
+    },
+  },
+  savePollDraft: {
+    title: {
+      id: 'note.savePollDraft.title',
+      defaultMessage: 'Save Poll Draft?',
+      description: 'Title of the confirmation when the poll is canceled',
+    },
+    description: {
+      id: 'note.savePollDraft.description',
+      defaultMessage: 'Do you wish to save this poll to continue editing it later?',
+      description: 'Description of the confirmation when the poll is canceled',
+    },
+    optionYes: {
+      id: 'note.savePollDraft.yes',
+      defaultMessage: 'Save',
+      description: 'Confirm saving poll as draft',
+    },
+    optionNo: {
+      id: 'note.savePollDraft.no',
+      defaultMessage: 'Discard',
+      description: 'Decline saving poll as draft',
+    },
+    optionCancel: {
+      id: 'note.savePollDraft.cancel',
+      defaultMessage: 'Continue Editing',
+      description: 'Continue editing the note',
+    },
+  },
+  confirmSwitchToPoll: {
+    title: {
+      id: 'note.confirmSwitchToPoll.title',
+      defaultMessage: 'Forget Note?',
+      description: 'Title of the confirmation when changing input to poll',
+    },
+    description: {
+      id: 'note.confirmSwitchToPoll.description',
+      defaultMessage: 'Do you wish to save this note to continue editing it later?',
+      description: 'Description of the confirmation when changing input to poll',
+    },
+    optionYes: {
+      id: 'note.confirmSwitchToPoll.yes',
+      defaultMessage: 'Save',
+      description: 'Confirm saving note as draft',
+    },
+    optionNo: {
+      id: 'note.confirmSwitchToPoll.no',
+      defaultMessage: 'Discard',
+      description: 'Decline saving note as draft',
+    },
+    optionCancel: {
+      id: 'note.confirmSwitchToPoll.cancel',
+      defaultMessage: 'Continue Editing',
+      description: 'Continue editing the note',
+    },
+  },
+  confirmRemovePoll: {
+    title: {
+      id: 'note.confirmRemovePoll.title',
+      defaultMessage: 'Remove poll?',
+      description: 'Title of the confirmation when removing a poll',
+    },
+    description: {
+      id: 'note.confirmRemovePoll.description',
+      defaultMessage: 'Do you wish to save this poll to continue editing it later?',
+      description: 'Description of the confirmation when removing a poll',
+    },
+    optionYes: {
+      id: 'note.confirmRemovePoll.yes',
+      defaultMessage: 'Save',
+      description: 'Confirm saving poll as draft',
+    },
+    optionNo: {
+      id: 'note.confirmRemovePoll.no',
+      defaultMessage: 'Discard',
+      description: 'Decline saving poll as draft',
+    },
+    optionCancel: {
+      id: 'note.confirmRemovePoll.cancel',
+      defaultMessage: 'Continue Editing',
+      description: 'Continue editing the poll',
     },
   },
 };
