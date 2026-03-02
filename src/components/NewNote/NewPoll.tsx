@@ -1,7 +1,7 @@
-import { Component, createEffect, createSignal, For, on, onMount, Show } from "solid-js";
+import { Component, createEffect, For, on, onMount, Show } from "solid-js";
 import { TextField } from "@kobalte/core/text-field";
 import { getNowTimestamp } from "../../lib/dates";
-import { createStore, SetStoreFunction } from "solid-js/store";
+import { SetStoreFunction } from "solid-js/store";
 import { uuidv4 } from "../../utils";
 import HelpTip from "../HelpTip/HelpTip";
 import AdvancedSearchSelectBox from "../AdvancedSearch/AdvancedSearchSelect";
@@ -71,6 +71,10 @@ export const calculateEndTimestamp = (pollLength: PollLength) => {
   const timestamp = getNowTimestamp() + seconds;
 
   return timestamp
+}
+
+export const getPollInput = (focusedInput: string) => {
+  return document.documentElement.querySelector(`[data-input-id=${focusedInput}]`) as HTMLTextAreaElement | HTMLInputElement | undefined;
 }
 
 const NewPoll: Component<{
@@ -268,6 +272,7 @@ const NewPoll: Component<{
               <TextField.Input
                 class={styles.limitInput}
                 ref={minZapLimit}
+                data-input-id="limit-min"
                 onFocus={() => props.setPollState('focusedInput', 'limit-min')}
                 // onFocus={() => setTimeout(() => props.setPollState('foucusedZapLimit', 'min'), 10)}
                 // onBlur={() => props.setPollState('foucusedZapLimit', '')}
@@ -297,6 +302,7 @@ const NewPoll: Component<{
               <TextField.Input
                 class={styles.limitInput}
                 ref={maxZapLimit}
+                data-input-id="limit-max"
                 onFocus={() => props.setPollState('focusedInput', 'limit-max')}
                 // onFocus={() => setTimeout(() => props.setPollState('foucusedZapLimit', 'max'), 10)}
                 // onBlur={() => props.setPollState('foucusedZapLimit', '')}

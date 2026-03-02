@@ -530,11 +530,16 @@ export const sendPoll = (question: string, kind: Kind.UserPoll | Kind.ZapPoll, t
     created_at: Math.floor((new Date()).getTime() / 1000),
   };
 
-  if (kind !== Kind.UserPoll) {
-    return new Promise<SendNoteResult>((resolve) => {
-      resolve({ success: false });
-    });
-  }
+
+  // signEvent(event).then((se => {
+  //   console.log('EVENT: ', se);
+  // }))
+
+  // if (kind !== Kind.UserPoll) {
+    // return new Promise<SendNoteResult>((resolve) => {
+    //   resolve({ success: false });
+    // });
+  // }
 
   return new Promise<SendNoteResult>((resolve) => {
     sendEvent(event, {

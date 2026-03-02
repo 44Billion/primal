@@ -83,7 +83,7 @@ import { StreamingData, getStreamingEvent } from "../../../lib/streaming";
 import { fetchUserProfile } from "../../../handleFeeds";
 import { accountStore, hasPublicKey, quoteNote, saveEmoji, setShowPin } from "../../../stores/accountStore";
 import { DecodedNaddr } from "nostr-tools/lib/types/nip19";
-import NewPoll, { calculateEndTimestamp, emptyPoll, PollState } from "../NewPoll";
+import NewPoll, { calculateEndTimestamp, emptyPoll, getPollInput, PollState } from "../NewPoll";
 
 type AutoSizedTextArea = HTMLTextAreaElement & { _baseScrollHeight: number };
 
@@ -289,15 +289,15 @@ const EditBox: Component<{
   };
 
   const onKeyDown = (e: KeyboardEvent) => {
-    if (!textArea) {
+    const input = isCreatingPoll() ? getPollInput(pollState.focusedInput) : textArea;
+
+    if (!input) {
       return false;
     }
 
     if (fileToUpload()) {
       return;
     }
-
-    const previousChar = textArea.value[textArea.selectionStart - 1];
 
     const mentionSeparators = ['Enter', 'Space', 'Comma', 'Tab'];
 
@@ -307,13 +307,12 @@ const EditBox: Component<{
       return false;
     }
 
-    if (!isCreatingPoll() && !isMentioning() && !isEmojiInput() && e.key === ':') {
-      // Ignore if `@` is a part of a word
-      if (textArea.selectionStart > 0 && ![' ', '\r\n', '\r', '\n'].includes(textArea.value[textArea.selectionStart-1])) {
+    if (!isMentioning() && !isEmojiInput() && e.key === ':') {
+      if ((input.selectionStart || 0) > 0 && ![' ', '\r\n', '\r', '\n'].includes(input.value[(input.selectionStart || 0)-1])) {
         return false;
       }
 
-      emojiCursorPosition = getCaretCoordinates(textArea, textArea.selectionStart);
+      emojiCursorPosition = getCaretCoordinates(input, (input.selectionStart || 0));
       setEmojiInput(true);
       return false;
     }
@@ -407,8 +406,8 @@ const EditBox: Component<{
         return false;
       }
 
-      const cursor = textArea.selectionStart;
-      const lastEmojiTrigger = textArea.value.slice(0, cursor).lastIndexOf(':');
+      const cursor = (input.selectionStart || 0);
+      const lastEmojiTrigger = input.value.slice(0, cursor).lastIndexOf(':');
 
       if (e.code === 'Backspace') {
         setEmojiQuery(emojiQuery().slice(0, -1));
@@ -431,11 +430,11 @@ const EditBox: Component<{
     }
 
 
-    if (!isCreatingPoll() && !isMentioning() && e.key === '@') {
-      mentionCursorPosition = getCaretCoordinates(textArea, textArea.selectionStart);
+    if (!isMentioning() && e.key === '@') {
+      mentionCursorPosition = getCaretCoordinates(input, (input.selectionStart || 0));
 
       // Ignore if `@` is a part of a word
-      if (textArea.selectionStart > 0 && ![' ', '\r\n', '\r', '\n'].includes(textArea.value[textArea.selectionStart-1])) {
+      if ((input.selectionStart || 0) > 0 && ![' ', '\r\n', '\r', '\n'].includes(input.value[(input.selectionStart || 0)-1])) {
         return false;
       }
 
@@ -445,20 +444,20 @@ const EditBox: Component<{
       return false;
     }
 
-    if (!isMentioning() && e.code === 'Backspace' && textArea) {
-      let cursor = textArea.selectionStart;
-      const textSoFar = textArea.value.slice(0, cursor);
+    if (!isMentioning() && e.code === 'Backspace' && input) {
+      let cursor = (input.selectionStart || 0);
+      const textSoFar = input.value.slice(0, cursor);
       const lastWord = textSoFar.split(/[\s,;\n\r]/).pop();
 
       if (lastWord?.startsWith('@`')) {
         const index = textSoFar.lastIndexOf(lastWord);
 
-        const newText = textSoFar.slice(0, index) + textArea.value.slice(cursor);
+        const newText = textSoFar.slice(0, index) + input.value.slice(cursor);
 
         setMessage(newText);
-        textArea.value = newText;
+        input.value = newText;
 
-        textArea.selectionEnd = index;
+        input.selectionEnd = index;
       }
     }
 
@@ -499,8 +498,8 @@ const EditBox: Component<{
         return false;
       }
 
-      const cursor = textArea.selectionStart;
-      const lastMentionTrigger = textArea.value.slice(0, cursor).lastIndexOf('@');
+      const cursor = (input.selectionStart || 0);
+      const lastMentionTrigger = input.value.slice(0, cursor).lastIndexOf('@');
 
       if (e.code === 'Backspace') {
         setPreQuery(preQuery().slice(0, -1));
@@ -742,10 +741,93 @@ const EditBox: Component<{
 
   const postPoll = async () => {
 
-    const messageToSend = pollState.question;
+    let userRelays = await (new Promise<Record<string, string[]>>(resolve => {
+      const uids = Object.values(userRefs).map(u => u.pubkey);
+      const subId = `users_relays_${APP_ID}`;
+
+      let relays: Record<string, string[]> = {};
+
+      const unsub = subsTo(subId, {
+        onEose: () => {
+          unsub();
+          resolve({ ...relays });
+        },
+        onEvent: (_, content) => {
+          if (content.kind !== Kind.UserRelays) return;
+
+          const pk = content.pubkey || 'UNKNOWN';
+
+          let rels: string[] = [];
+
+          for (let i = 0; i < (content.tags || []).length; i++) {
+            if (rels.length > 1) break;
+
+            const rel = content.tags[i];
+            if (rel[0] !== 'r' || rels.includes(rel[1])) continue;
+
+            rels.push(rel[1]);
+          }
+
+          relays[pk] = [...rels];
+        },
+        onNotice: () => resolve({}),
+      })
+
+      getUsersRelayInfo(uids, subId);
+    }));
+
+    const questionToSend = pollState.question.replace(editMentionRegex, (url) => {
+      const atIndex = url.indexOf('@');
+
+      const anythingBefore = url.slice(0, atIndex);
+      const mention = url.slice(atIndex);
+
+      const [_, name] = mention.split('\`');
+      const user = userRefs[name];
+
+      let pInfo: nip19.ProfilePointer = { pubkey: user.pubkey };
+      const relays = userRelays[user.pubkey] || [];
+
+      if (relays.length > 0) {
+        pInfo.relays = [...relays];
+      }
+
+      const nprofile = nip19.nprofileEncode(pInfo);
+
+      // @ts-ignore
+      return `${anythingBefore}nostr:${nprofile}`;
+    });
+
+    const choicesToSend = pollState.options.map(choice => {
+      return {
+        id: choice.id,
+        label: choice.label.replace(editMentionRegex, (url) => {
+          const atIndex = url.indexOf('@');
+
+          const anythingBefore = url.slice(0, atIndex);
+          const mention = url.slice(atIndex);
+
+          const [_, name] = mention.split('\`');
+          const user = userRefs[name];
+
+          let pInfo: nip19.ProfilePointer = { pubkey: user.pubkey };
+          const relays = userRelays[user.pubkey] || [];
+
+          if (relays.length > 0) {
+            pInfo.relays = [...relays];
+          }
+
+          const nprofile = nip19.nprofileEncode(pInfo);
+
+          // @ts-ignore
+          return `${anythingBefore}nostr:${nprofile}`;
+        }),
+      };
+    })
 
     if (accountStore) {
-      let tags = referencesToTags(messageToSend, relayHints);
+      const textToParseForRefs = `${questionToSend} ${choicesToSend.map(c => `${c.label} `)}`
+      let tags = referencesToTags(textToParseForRefs, relayHints);
       const rep = props.replyToNote;
 
       // @ts-ignore
@@ -861,18 +943,33 @@ const EditBox: Component<{
 
       const endsAt = calculateEndTimestamp(pollState.pollLength)
 
-      let pollTags = [
-        ...pollState.options.map(o => ['option', o.id, o.label]),
-        ['polltype', pollState.pollType],
-        ['endsAt', `${endsAt}`],
-      ];
+      let pollTags: string[][] = [];
+
+      if (pollState.pollKind === Kind.ZapPoll) {
+        pollTags = [
+          ...choicesToSend.map(o => ['poll_option', o.id, o.label]),
+          ["value_maximum", `${pollState.zapLimits.max}`],
+          ["value_minimum", `${pollState.zapLimits.min}`],
+          // ["consensus_threshold", "required percentage to attain consensus <0..100>"],
+          ['polltype', pollState.pollType],
+          ['closed_at', `${endsAt}`],
+        ];
+      }
+
+      if (pollState.pollKind === Kind.UserPoll) {
+        pollTags = [
+          ...choicesToSend.map(o => ['option', o.id, o.label]),
+          ['polltype', pollState.pollType],
+          ['endsAt', `${endsAt}`],
+        ];
+      }
 
       tags = [...tags, ...relayTags, ...mediaTagsToAdd, ...pollTags];
 
       setIsPostingInProgress(true);
 
       const { success, reasons, note } = await sendPoll(
-        messageToSend,
+        questionToSend,
         pollState.pollKind,
         tags,
       );
@@ -1149,17 +1246,18 @@ const EditBox: Component<{
   };
 
   const mentionPositionOptions = () => {
-    if (!textArea || !mentionOptions || !editWrap) {
+    const input = isCreatingPoll() ? getPollInput(pollState.focusedInput) : textArea;
+    if (!input || !mentionOptions || !editWrap) {
       return;
     }
 
-    const taRect = textArea.getBoundingClientRect();
+    const taRect = input.getBoundingClientRect();
     const wRect = editWrap.getBoundingClientRect();
 
     let mTop = mentionCursorPosition.top;
 
-    if (textArea.scrollTop > 0) {
-      mTop -= textArea.scrollTop;
+    if (input.scrollTop > 0) {
+      mTop -= input.scrollTop;
     }
 
     let newTop = taRect.top - wRect.top + mTop + 22;
@@ -1174,17 +1272,18 @@ const EditBox: Component<{
   };
 
   const emojiPositionOptions = () => {
-    if (!textArea || !emojiOptions || !editWrap) {
+    const input = isCreatingPoll() ? getPollInput(pollState.focusedInput) : textArea;
+    if (!input || !emojiOptions || !editWrap) {
       return;
     }
 
-    const taRect = textArea.getBoundingClientRect();
+    const taRect = input.getBoundingClientRect();
     const wRect = editWrap.getBoundingClientRect();
 
     let mTop = emojiCursorPosition.top;
 
-    if (textArea.scrollTop > 0) {
-      mTop -= textArea.scrollTop;
+    if (input.scrollTop > 0) {
+      mTop -= input.scrollTop;
     }
 
     let newTop = taRect.top - wRect.top + mTop + 22;
@@ -1819,7 +1918,8 @@ const EditBox: Component<{
   });
 
   const selectEmoji = (emoji: EmojiOption) => {
-    if (!textArea || !emoji) {
+    const input = isCreatingPoll() ? getPollInput(pollState.focusedInput) : textArea;
+    if (!input || !emoji) {
       setEmojiInput(false);
       setEmojiQuery('');
       setEmojiResults(() => []);
@@ -1827,22 +1927,35 @@ const EditBox: Component<{
     }
 
     saveEmoji(emoji);
-    const msg = message();
+    const msg = isCreatingPoll() ? pollState.question : message();
 
     // Get cursor position to determine insertion point
-    let cursor = textArea.selectionStart;
+    let cursor = (input.selectionStart || 0);
 
     // Get index of the token and insert emoji character
     const index = msg.slice(0, cursor).lastIndexOf(':');
     const value = msg.slice(0, index) + `${emoji.name} ` + msg.slice(cursor);
 
     // Reset query, update message and text area value
-    setMessage(value);
-    textArea.value = message();
+    if (isCreatingPoll()) {
+      const inputId = pollState.focusedInput;
+      if (inputId === 'question') {
+        setPollState('question', value)
+        input.value = pollState.question;
+      }
+      if (inputId.startsWith('choice-')) {
+        const index = parseInt(inputId.split('-')[1] || '0');
+        setPollState('options', index, 'label', value)
+        input.value = pollState.options[index].label;
+      }
+    } else {
+      setMessage(value);
+      input.value = message();
+    }
 
     // Calculate new cursor position
-    textArea.selectionEnd = index + 3;
-    textArea.focus();
+    input.selectionEnd = index + 3;
+    input.focus();
 
     setEmojiInput(false);
     setEmojiQuery('');
@@ -1854,7 +1967,8 @@ const EditBox: Component<{
   };
 
   const selectUser = (user: PrimalUser | undefined) => {
-    if (!textArea || !user) {
+    const input = isCreatingPoll() ? getPollInput(pollState.focusedInput) : textArea;
+    if (!input || !user) {
       return;
     }
 
@@ -1867,30 +1981,55 @@ const EditBox: Component<{
       [name]: user,
     }));
 
-    const msg = message();
+    let msg = message();
+
+    if (isCreatingPoll()) {
+      msg = '';
+      const inputId = pollState.focusedInput;
+      if (inputId === 'question') {
+        msg = pollState.question;
+      }
+      if (inputId.startsWith('choice-')) {
+        const index = parseInt(inputId.split('-')[1] || '0');
+        msg = pollState.options[index].label;
+      }
+    }
 
     // Get cursor position to determine insertion point
-    let cursor = textArea.selectionStart;
+    let cursor = (input.selectionStart || 0);
 
     // Get index of the token and insert user's handle
     const index = msg.slice(0, cursor).lastIndexOf('@');
     const value = msg.slice(0, index) + `@\`${name}\` ` + msg.slice(cursor);
 
     // Reset query, update message and text area value
-    setQuery('');
-    setMessage(value);
-    textArea.value = message();
+    if (isCreatingPoll()) {
+      const inputId = pollState.focusedInput;
+      if (inputId === 'question') {
+        setPollState('question', value)
+        input.value = pollState.question;
+      }
+      if (inputId.startsWith('choice-')) {
+        const index = parseInt(inputId.split('-')[1] || '0');
+        setPollState('options', index, 'label', value)
+        input.value = pollState.options[index].label;
+      }
+    } else {
+      setMessage(value);
+      input.value = message();
+    }
 
-    textArea.focus();
+    setQuery('');
+    input.focus();
 
     // Calculate new cursor position
     cursor = value.slice(0, cursor).lastIndexOf('@') + name.length + 4;
-    textArea.selectionEnd = cursor;
+    input.selectionEnd = cursor;
 
 
     // Dispatch input event to recalculate UI position
     const e = new Event('input', { bubbles: true, cancelable: true});
-    textArea.dispatchEvent(e);
+    input.dispatchEvent(e);
   };
 
   const focusInput = () => {
@@ -1900,20 +2039,21 @@ const EditBox: Component<{
   const prefix = () => props.idPrefix ?? '';
 
   const insertAtCursor = (text: string) => {
-    if (!textArea) {
+    const input = isCreatingPoll() ? getPollInput(pollState.focusedInput) : textArea;
+    if (!input) {
       return;
     }
 
     const msg = message();
 
-    const cursor = textArea.selectionStart;
+    const cursor = (input.selectionStart || 0);
 
     const value = msg.slice(0, cursor) + `${text}` + msg.slice(cursor);
 
     setMessage(() => value);
-    textArea.value = value;
+    input.value = value;
 
-    textArea.focus();
+    input.focus();
   };
 
   const isSupportedFileType = (file: File) => {
