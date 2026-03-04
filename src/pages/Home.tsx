@@ -31,6 +31,9 @@ import FeedNoteSkeleton from '../components/Skeleton/FeedNoteSkeleton';
 import { Transition } from 'solid-transition-group';
 import { isPhone } from '../utils';
 import PageCaption from '../components/PageCaption/PageCaption';
+import { Kind } from '../constants';
+import { userName } from '../stores/profile';
+import { date } from '../lib/dates';
 
 
 const Home: Component = () => {
@@ -167,15 +170,26 @@ const Home: Component = () => {
             <div class={isPhone() ? styles.readsFeed : ''}>
               <For each={context?.notes} >
                 {note => (
-                  <div class="animated">
-                    <Note
-                      note={note}
-                      shorten={true}
-                      onRemove={(id: string) => {
-                        context?.actions.removeEvent(id, 'notes');
-                      }}
-                    />
-                  </div>
+                  <Switch>
+                    <Match when={note.msg.kind === Kind.Text}>
+                      <div class="animated">
+                        <Note
+                          note={note}
+                          shorten={true}
+                          onRemove={(id: string) => {
+                            context?.actions.removeEvent(id, 'notes');
+                          }}
+                        />
+                      </div>
+                    </Match>
+                    <Match when={note.msg.kind === Kind.UserPoll}>
+                      <div class="animated">
+                        <div>
+                          <div>Poll: {note.question} {userName(note.user)} {date(note.msg.created_at || 0).label}</div>
+                        </div>
+                      </div>
+                    </Match>
+                  </Switch>
                 )}
               </For>
             </div>

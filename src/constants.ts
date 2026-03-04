@@ -183,6 +183,8 @@ export enum Kind  {
   ArticlesStats=10_000_174,
   LiveEventStats=10_000_176,
 
+  PollResults=10_000_179,
+
   WALLET_OPERATION = 10_000_300,
   WALLET_NWC_ACTIVE = 10_000_802,
   WALLET_NWC_CONNECTION = 10_000_803,

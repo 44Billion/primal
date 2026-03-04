@@ -1,23 +1,25 @@
 import { createContext, createEffect, on, useContext } from "solid-js";
 import { createStore, reconcile } from "solid-js/store";
 import { APP_ID } from "../App";
-import { minKnownProfiles } from "../constants";
+import { Kind, minKnownProfiles } from "../constants";
 import {
   ContextChildren,
   FeedPage,
+  FeedSpec,
   NostrNoteContent,
   PrimalArticleFeed,
   PrimalNote,
+  PrimalUserPoll,
   SelectionOption,
 } from "../types/primal";
-import { emptyPaging, fetchMegaFeed, fetchScoredContent, filterAndSortNotes, PaginationInfo } from "../megaFeeds";
+import { emptyPaging, fetchMegaFeed, fetchMegaMultiFeed, fetchScoredContent, filterAndSortEvents, filterAndSortNotes, PaginationInfo } from "../megaFeeds";
 import { fetchStoredFeed, saveStoredFeed } from "../lib/localStore";
-import { calculateNotesOffset } from "../utils";
+import { calculateEventsOffset, calculateNotesOffset } from "../utils";
 import { accountStore } from "../stores/accountStore";
 import { useSettingsContext } from "./SettingsContext";
 
 type HomeContextStore = {
-  notes: PrimalNote[],
+  notes: (PrimalNote | PrimalUserPoll)[],
   futureNotes: PrimalNote[],
   sidebarNotes: PrimalNote[],
   paging: Record<string, PaginationInfo>,
@@ -166,13 +168,13 @@ export const HomeProvider = (props: { children: ContextChildren }) => {
       store.futureNotes :
       store.notes.slice(0, 20);
 
-    const offset = calculateNotesOffset(
+    const offset = calculateEventsOffset(
       lastPageNotes,
       store.futureNotes.length > 0 ?
         store.paging.future : store.paging.notes,
     );
 
-    const { notes, paging } = await fetchMegaFeed(
+    const { notes, paging } = await fetchMegaMultiFeed(
       accountStore.publicKey,
       spec,
       `home_future_${APP_ID}`,
@@ -201,29 +203,40 @@ export const HomeProvider = (props: { children: ContextChildren }) => {
     clearFuture();
   };
 
-  const fetchNotes = async (spec: string, until = 0, includeIsFetching = true) => {
+  const fetchNotes = async (initSpec: string, until = 0, includeIsFetching = true) => {
 
     updateStore('isFetching' , () => includeIsFetching);
 
     const pubkey = accountStore.publicKey || minKnownProfiles.names['primal'];
 
-    const offset = calculateNotesOffset(store.notes, store.paging.notes);
+    const offset = calculateEventsOffset(store.notes, store.paging.notes);
 
-    const { notes, paging } = await fetchMegaFeed(
+    const specJson = JSON.parse(initSpec) as FeedSpec;
+
+    if (['latest', 'global-trending', 'all-notes'].includes(specJson.id)) {
+      delete specJson.kind;
+      specJson.kinds = [Kind.Text, Kind.Repost, Kind.UserPoll, Kind.ZapPoll]
+    }
+
+    const spec = JSON.stringify(specJson);
+
+    const { notes, userPolls, paging } = await fetchMegaMultiFeed(
       pubkey,
       spec,
       `home_feed_${APP_ID}`,
       {
-        until,
+        until: 1772535413,
         limit: 20,
         offset,
       },
     );
 
-    const sortedNotes = filterAndSortNotes(notes, paging);
+    const sortedEvents = filterAndSortEvents([...notes, ...userPolls], paging);
+
+    // const sortedNotes = filterAndSortNotes(notes, paging);
 
     updateStore('paging', 'notes', () => ({ ...paging }));
-    updateStore('notes', (ns) => [ ...ns, ...sortedNotes]);
+    updateStore('notes', (ns) => [ ...ns, ...(sortedEvents as (PrimalNote | PrimalUserPoll)[])]);
     updateStore('isFetching', () => false);
 
   };

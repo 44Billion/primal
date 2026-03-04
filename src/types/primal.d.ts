@@ -17,7 +17,7 @@ export type TopZap = {
 }
 
 export type NostrNoteContent = {
-  kind: Kind.Text | Kind.Repost | Kind.LongForm | Kind.LongFormShell | Kind.Draft | Kind.LiveEvent,
+  kind: number,
   content: string,
   id: string,
   created_at?: number,
@@ -693,6 +693,9 @@ export type FeedPage = {
 
 export type TopicStats = Record<string, number>;
 
+export type PollResults = Record<string, { votes: number, satszapped: number }>;
+
+
 export type MegaFeedPage = {
   users: {
     [pubkey: string]: NostrUserContent,
@@ -702,6 +705,9 @@ export type MegaFeedPage = {
   drafts: NostrNoteContent[],
   noteStats: NostrPostStats,
   zaps: NostrUserZaps[],
+  userPolls: NostrNoteContent[],
+  zapPolls: NostrNoteContent[],
+  pollResults: Record<string, PollResults>,
   topicStats: TopicStats,
   mentions: Record<string, NostrNoteContent>,
   noteActions: Record<string, NoteActions>,
@@ -771,6 +777,7 @@ export type NostrRelayEvent = {
   id?: string,
   kind: number,
   content: any,
+  sig?: string,
   created_at: number,
   tags: string[][],
 };
@@ -985,6 +992,27 @@ export type PrimalDraft = {
   noteId: string,
   repost?: PrimalRepost,
 }
+
+export type PrimalUserPoll = {
+  user: PrimalUser,
+  msg: NostrNoteContent,
+  mentionedNotes?: Record<string, PrimalNote>,
+  mentionedUsers?: Record<string, PrimalUser>,
+  mentionedArticles?: Record<string, PrimalArticle>,
+  mentionedZaps?: Record<string, PrimalZap>,
+  mentionedHighlights?: Record<string, any>,
+  mentionedLiveEvents?: Record<string, StreamingData>,
+  replyTo?: string,
+  id: string,
+  pubkey: string,
+  noteId: string,
+  noteIdShort: string,
+  tags: string[][],
+  question: string,
+  choices: { id: string, label: string, index: number }[],
+  results: PollResults,
+  relayHints?: Record<string, string>,
+};
 
 export type PrimalFeed = {
   name: string,
@@ -1302,3 +1330,12 @@ export type FeedRange = {
   until: number,
   elements: string[],
 };
+
+export type FeedSpec = {
+  id: string,
+  kind?: string,
+  kinds?: number[],
+  hours?: number,
+  pubkey?: string,
+  minwords?: number,
+}

@@ -1,6 +1,6 @@
 import { format } from 'd3-format';
 import { subsTo } from './sockets';
-import { DirectMessage, NostrEventContent, PrimalArticle, PrimalNote, PrimalZap } from './types/primal';
+import { DirectMessage, NostrEventContent, NostrNoteContent, PrimalArticle, PrimalNote, PrimalNoteData, PrimalZap } from './types/primal';
 import { DMContact, LeaderboardInfo, PaginationInfo } from './megaFeeds';
 import { isAndroid } from '@kobalte/utils';
 import { BlossomClient, SignedEvent, BlobDescriptor, fetchWithTimeout } from "blossom-client-sdk";
@@ -276,6 +276,37 @@ export const humanizeTime = (seconds: number) => {
   const secs = String(Math.ceil(seconds % 60)).padStart(2, '0');
 
   return `${mins}:${secs}`;
+}
+
+export type PrimalEvent = {
+  msg: NostrNoteContent,
+  post?: PrimalNoteData,
+}
+export const calculateEventsOffset = (notes: PrimalEvent[], paging: PaginationInfo) => {
+  let offset = 0;
+
+  for (let i=notes.length-1;i>=0;i--) {
+    const note = notes[i];
+
+    if (
+      paging.sortBy === 'created_at' &&
+      note.msg.created_at !== paging.since
+    ) break;
+
+    if (
+      paging.sortBy === 'satszapped' &&
+      note.post?.satszapped !== paging.since
+    ) break;
+
+    if (
+      paging.sortBy === 'score' &&
+      note.post?.score !== paging.since
+    ) break;
+
+    offset++;
+  }
+
+  return offset;
 }
 
 export const calculateNotesOffset = (notes: PrimalNote[], paging: PaginationInfo) => {

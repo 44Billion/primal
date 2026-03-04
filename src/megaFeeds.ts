@@ -1,5 +1,5 @@
 import { Kind } from "./constants";
-import { getArticleThread, getMegaFeed } from "./lib/feed";
+import { getArticleThread, getMegaFeed, getMultiFeed } from "./lib/feed";
 import { parseLinkPreviews, setLinkPreviews } from "./lib/notes";
 import { subsTo } from "./sockets";
 import { isRepostInCollection } from "./stores/note";
@@ -11,13 +11,17 @@ import {
   NostrMessageEncryptedContent,
   NostrNoteActionsContent,
   NostrNoteContent,
+  NostrRelayEvent,
+  NostrRelaySignedEvent,
   NostrStatsContent,
   NostrUserContent,
   NoteActions,
+  PollResults,
   PrimalArticle,
   PrimalDraft,
   PrimalNote,
   PrimalUser,
+  PrimalUserPoll,
   PrimalZap,
   SenderMessageCount,
   TopicStats,
@@ -26,7 +30,7 @@ import {
   UserStats,
 } from "./types/primal";
 import { parseBolt11 } from "./utils";
-import { convertToDraftsMega, convertToNotesMega, convertToReadsMega, convertToUsersMega } from "./stores/megaFeed";
+import { convertToDraftsMega, convertToNotesMega, convertToReadsMega, convertToUserPollsMega, convertToUsersMega } from "./stores/megaFeed";
 import { getRecomendedArticleIds, getScoredUsers } from "./lib/search";
 import { fetchArticles } from "./handleNotes";
 import { APP_ID } from "./App";
@@ -70,6 +74,7 @@ export type MegaFeedResults = {
   reads: PrimalArticle[],
   drafts: PrimalDraft[],
   zaps: PrimalZap[],
+  userPolls: PrimalUserPoll[],
   topicStats: TopicStat[],
   paging: PaginationInfo,
   page: MegaFeedPage,
@@ -93,6 +98,9 @@ export const emptyMegaFeedPage: () => MegaFeedPage = () => ({
   reads: [],
   drafts: [],
   zaps: [],
+  userPolls: [],
+  zapPolls: [],
+  pollResults: {},
   topicStats: {},
   noteStats: {},
   mentions: {},
@@ -122,6 +130,7 @@ export const emptyMegaFeedResults = () => ({
   reads: [],
   drafts: [],
   zaps: [],
+  userPolls: [],
   topicStats: [],
   dmContacts: [],
   paging: { ...emptyPaging() },
@@ -145,6 +154,50 @@ export const parseEmptyReposts = (page: MegaFeedPage) => {
   });
 
   return reposts;
+};
+
+
+export const fetchMegaMultiFeed = (
+  pubkey: string | undefined,
+  specification: any,
+  subId: string,
+  paging?: FeedPaging,
+) => {
+    return new Promise<MegaFeedResults>((resolve) => {
+      let page: MegaFeedPage = {...emptyMegaFeedPage()};
+
+      const unsub = subsTo(subId, {
+        onEose: () => {
+          unsub();
+          resolve(pageMultiFeedResolve(page));
+        },
+        onEvent: (s, content) => {
+          updateFeedPage(page, content);
+        }
+      });
+
+      const until = paging?.until || 0;
+      const since = paging?.since || 0;
+      const limit = paging?.limit || 0;
+
+      let offset = 0;
+
+      if (typeof paging?.offset === 'number') {
+        offset = paging.offset;
+      }
+      else if (Array.isArray(paging?.offset)) {
+        if (until > 0) {
+          offset = (paging?.offset || []).filter(v => v === until).length;
+        }
+
+        if (since > 0) {
+          offset = (paging?.offset || []).filter(v => v === since).length;
+        }
+      }
+
+      getMultiFeed(pubkey, specification, subId, until, limit, since, offset);
+
+    });
 };
 
 export const fetchMegaFeed = (
@@ -633,6 +686,129 @@ export const fetchPeople = (
   });
 }
 
+export type MultiFeedPage = {
+  range: FeedRange,
+  // Main events: kind -> pk/id/coordinate -> event
+  events: Record<string, Record<string, NostrRelaySignedEvent>>,
+  // Auxillary Events: kind -> event[]
+  auxEvents: Record<string, NostrRelayEvent[]>,
+
+  // Auxillary Events: main_event_id -> kind -> event[]
+  // auxEvents: Record<string, Record<string, NostrRelayEvent>>,
+}
+
+export const pageMultiFeedResolve = (page: MegaFeedPage) => {
+
+  // If there are reposts that have empty content,
+  // we need to add the content manualy
+  const reposts = parseEmptyReposts(page);
+  const repostIds = Object.keys(reposts);
+
+  if (repostIds.length > 0) {
+    repostIds.forEach(id => {
+      const repostedNote = page.mentions[id];
+
+      if (repostedNote) {
+        const i = page.notes.findIndex(n => n.id === reposts[id]);
+        page.notes[i].content = JSON.stringify(repostedNote);
+      }
+    })
+  }
+
+  const users = convertToUsersMega(page);
+  const notes = convertToNotesMega(page);
+  const reads = convertToReadsMega(page);
+  const drafts = convertToDraftsMega(page);
+  const zaps = convertToZapsMega(page);
+  const topicStats = convertToTopicStatsMega(page);
+  const dmContacts = convertToContactsMega(page);
+  const encryptedMessages = [...page.encryptedMessages];
+  const legendCustomization = { ...page.legendCustomization };
+  const memberCohortInfo = { ...page.memberCohortInfo };
+  const leaderboard = [ ...page.leaderboard ];
+
+  const userPolls = convertToUserPollsMega(page);
+
+  return {
+    users,
+    notes,
+    reads,
+    drafts,
+    zaps,
+    userPolls,
+    topicStats,
+    dmContacts,
+    encryptedMessages,
+    legendCustomization,
+    memberCohortInfo,
+    leaderboard,
+    paging: {
+      since: page.since,
+      until: page.until,
+      sortBy: page.sortBy,
+      elements: page.elements,
+    },
+    page,
+  };
+}
+
+export const updateMultiFeedPage = (page: MultiFeedPage, content: NostrEventContent) => {
+  if (content.kind === Kind.FeedRange) {
+    const feedRange: FeedRange = JSON.parse(content.content || '{}');
+
+    page.range = { ...feedRange };
+    return;
+  }
+
+  if ([Kind.Metadata].includes(content.kind)) {
+    const user = content as NostrRelaySignedEvent;
+
+    page.events[Kind.Metadata][user.pubkey] = { ...user };
+    return;
+  }
+
+  if (
+    [
+      Kind.Text,
+      Kind.Repost,
+      Kind.LongForm,
+      Kind.Draft,
+      Kind.UserPoll,
+      Kind.ZapPoll,
+      Kind.Zap,
+      Kind.EncryptedDirectMessage,
+
+    ].includes(content.kind)
+  ) {
+    const event = content as NostrRelaySignedEvent;
+    page.events[event.kind][event.id] = { ...event };
+  }
+
+  if (
+    [
+      Kind.PollResults,
+      Kind.NoteStats,
+      Kind.Mentions,
+      Kind.NoteActions,
+      Kind.NoteTopicStat,
+      Kind.UserStats,
+      Kind.UserFollowerCounts,
+      Kind.UserFollowerIncrease,
+      Kind.MesagePerSenderStats,
+      Kind.WordCount,
+      Kind.LegendCustomization,
+      Kind.MembershipCohortInfo,
+      Kind.LegendLeaderboard,
+      Kind.PremiumLeaderboard
+    ].includes(content.kind)
+  ) {
+    const auxEvent = content as NostrRelayEvent;
+    page.auxEvents[auxEvent.kind].push({ ...auxEvent })
+
+    return;
+  }
+};
+
 export const pageResolve = (page: MegaFeedPage) => {
 
   // If there are reposts that have empty content,
@@ -663,12 +839,15 @@ export const pageResolve = (page: MegaFeedPage) => {
   const memberCohortInfo = { ...page.memberCohortInfo };
   const leaderboard = [ ...page.leaderboard ];
 
+  const userPolls = convertToUserPollsMega(page);
+
   return {
     users,
     notes,
     reads,
     drafts,
     zaps,
+    userPolls,
     topicStats,
     dmContacts,
     encryptedMessages,
@@ -727,11 +906,33 @@ export const updateFeedPage = (page: MegaFeedPage, content: NostrEventContent) =
   }
 
   if ([Kind.Draft].includes(content.kind)) {
-      const message = content as NostrNoteContent;
+    const message = content as NostrNoteContent;
 
-      page.drafts.push({ ...message });
-      return;
-    }
+    page.drafts.push({ ...message });
+    return;
+  }
+
+  if ([Kind.UserPoll].includes(content.kind)) {
+    const message = content as NostrNoteContent;
+
+    page.userPolls.push({ ...message });
+    return;
+  }
+
+  if ([Kind.ZapPoll].includes(content.kind)) {
+    const message = content as NostrNoteContent;
+
+    page.zapPolls.push({ ...message });
+    return;
+  }
+
+  if ([Kind.PollResults].includes(content.kind)) {
+    const statistic = content as NostrNoteContent;
+    const stat = JSON.parse(statistic.content) as Record<string, PollResults>;
+
+    page.pollResults = ({ ...page.pollResults, ...stat });
+    return;
+  }
 
   if (content.kind === Kind.NoteStats) {
     const statistic = content as NostrStatsContent;
@@ -902,6 +1103,23 @@ export const updateFeedPage = (page: MegaFeedPage, content: NostrEventContent) =
 
 };
 
+export type FeedEvent = { id: string, repost?: any, msg: NostrNoteContent }
+
+export const filterAndSortEvents = (events: FeedEvent[], paging: PaginationInfo) => {
+  let processedIds: string[] = [];
+  return paging.elements.reduce<FeedEvent[]>(
+    (acc, id) => {
+      let event = events.find(n => [n.id, n.repost?.note.id].includes(id));
+
+      if (!event || processedIds.includes(event.id)) return acc;
+
+      processedIds.push(event.id);
+
+      return [ ...acc, { ...event } ];
+    },
+    [],
+  );
+}
 export const filterAndSortNotes = (notes: PrimalNote[], paging: PaginationInfo) => {
   let processedIds: string[] = [];
   return paging.elements.reduce<PrimalNote[]>(

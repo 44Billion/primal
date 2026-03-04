@@ -68,6 +68,33 @@ export const getDrafts = (pubkey: string | undefined, subId: string, until = 0, 
       ]));
 };
 
+
+export const getMultiFeed = (user_pubkey: string | undefined, spec: string, subid: string, until = 0, limit = 20, since = 0, offset = 0) => {
+
+  let payload = { spec, limit, offset };
+
+  if (until > 0) {
+    // @ts-ignore
+    payload.until = until;
+  }
+
+  if (since > 0) {
+    // @ts-ignore
+    payload.since = since
+  }
+
+  if (user_pubkey) {
+    // @ts-ignore
+    payload.user_pubkey = user_pubkey;
+  }
+
+  sendMessage(JSON.stringify([
+    "REQ",
+    subid,
+    {cache: ["multi_kind_mega_feed_directive", payload]},
+  ]));
+}
+
 export const getMegaFeed = (user_pubkey: string | undefined, spec: string, subid: string, until = 0, limit = 20, since = 0, offset = 0) => {
 
   if (spec.includes('"kind":"drafts"')) {

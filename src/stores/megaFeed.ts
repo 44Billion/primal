@@ -2,7 +2,7 @@ import { nip19 } from "nostr-tools";
 import { Kind } from "../constants";
 import { hexToNpub } from "../lib/keys";
 import { sanitize } from "../lib/notes";
-import { MegaFeedPage, MegaRepostInfo, NostrEvent, NostrNoteContent, PrimalArticle, PrimalDraft, PrimalNote, PrimalUser, PrimalZap, TopZap, UserStats } from "../types/primal";
+import { MegaFeedPage, MegaRepostInfo, NostrEvent, NostrNoteContent, PrimalArticle, PrimalDraft, PrimalNote, PrimalUser, PrimalUserPoll, PrimalZap, TopZap, UserStats } from "../types/primal";
 import { convertToUser } from "./profile";
 import { parseBolt11, selectRelayTags } from "../utils";
 import { logError } from "../lib/logger";
@@ -912,4 +912,80 @@ export const convertToDraftsMega = (page: MegaFeedPage) => {
   }
 
   return drafts;
+};
+
+
+export const convertToUserPollsMega = (page: MegaFeedPage) => {
+
+  if (page === undefined) {
+    return [];
+  }
+
+  let i = 0;
+
+  let userPolls: PrimalUserPoll[] = [];
+
+  for (i=0;i<page.userPolls.length;i++) {
+    const pagePoll = page.userPolls[i];
+
+    const author = convertToUser(page.users[pagePoll.pubkey], pagePoll.pubkey);
+    const results = page.pollResults[pagePoll.id];
+    const topZaps = page.topZaps[pagePoll.id] || [];
+
+    const tags = pagePoll.tags || [];
+    const replyTo = extractReplyTo(tags);
+
+    const choices = pagePoll.tags.reduce<{ id: string, label: string, index: number }[]>(
+      (acc, t, index) => {
+        if (t[0] !== 'option') return acc;
+        return [...acc, { id: t[1], label: t[2], index }];
+      },
+      [],
+    );
+
+    // Parse mentions
+    let {
+      mentionedNotes,
+      mentionedArticles,
+      mentionedUsers,
+      mentionedHighlights,
+      mentionedZaps,
+      mentionedLiveEvents,
+    } = extractMentions(page, pagePoll);
+
+    const eventPointer: nip19.EventPointer = {
+      id: pagePoll.id,
+      author: pagePoll.pubkey,
+      kind: pagePoll.kind,
+      relays: tags.reduce((acc, t) => t[0] === 'r' && (t[1].startsWith('wss://' ) || t[1].startsWith('ws://')) ? [...acc, t[1]] : acc, []).slice(0, 2),
+    };
+
+    const eventPointerShort: nip19.EventPointer = {
+      id: pagePoll.id,
+    };
+
+    const newPoll: PrimalUserPoll = {
+      user: author,
+      msg: pagePoll,
+      mentionedNotes,
+      mentionedUsers,
+      mentionedHighlights,
+      mentionedArticles,
+      mentionedZaps,
+      mentionedLiveEvents,
+      replyTo: replyTo && replyTo[1],
+      tags: pagePoll.tags,
+      id: pagePoll.id,
+      noteId: nip19.neventEncode(eventPointer),
+      noteIdShort: nip19.neventEncode(eventPointerShort),
+      pubkey: pagePoll.pubkey,
+      question: sanitize(pagePoll.content),
+      choices,
+      results,
+      relayHints: page.relayHints,
+    };
+
+    userPolls.push(newPoll);
+  }
+  return userPolls;
 };
