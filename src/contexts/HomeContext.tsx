@@ -225,8 +225,8 @@ export const HomeProvider = (props: { children: ContextChildren }) => {
       spec,
       `home_feed_${APP_ID}`,
       {
-        // until,
-        until: 1772535413,
+        until,
+        // until: 1772535413,
         limit: 20,
         offset,
       },

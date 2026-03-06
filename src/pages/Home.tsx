@@ -187,6 +187,9 @@ const Home: Component = () => {
                       <div class="animated">
                         <UserPoll
                           poll={note}
+                          onRemove={(id: string) => {
+                            context?.actions.removeEvent(id, 'notes');
+                          }}
                         />
                       </div>
                     </Match>

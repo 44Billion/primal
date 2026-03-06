@@ -156,7 +156,7 @@ export type AppContextStore = {
     closeCustomZapModal: () => void,
     resetCustomZap: () => void,
     openContextMenu: (
-      note: PrimalNote | PrimalArticle,
+      note: PrimalNote | PrimalArticle | PrimalUserPoll,
       position: DOMRect | undefined,
       openCustomZap: () => void,
       openReaction: () => void,

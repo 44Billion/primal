@@ -1,4 +1,4 @@
-import { batch, Component, For, Match, onMount, Show, Switch } from "solid-js";
+import { batch, Component, createSignal, For, Match, onMount, Show, Switch } from "solid-js";
 import { hookForDev } from "../../lib/devTools";
 
 import styles from './UserPoll.module.scss';
@@ -19,11 +19,13 @@ import NoteFooter from "../Note/NoteFooter/NoteFooter";
 import { accountStore } from "../../stores/accountStore";
 import { useThreadContext } from "../../contexts/ThreadContext";
 import { useSettingsContext } from "../../contexts/SettingsContext";
+import NoteContextTrigger from "../Note/NoteContextTrigger";
 
 export type UserPollProps = {
   id: string,
   poll: PrimalUserPoll
   hideContext?: boolean,
+  onRemove?: (id: string, isRepost?: boolean) => void,
 }
 
 const UserPoll: Component<UserPollProps> = (props) => {
@@ -59,18 +61,21 @@ const UserPoll: Component<UserPollProps> = (props) => {
   let latestTopZap: string = '';
   let latestTopZapFeed: string = '';
 
-  const doVote = (choice: PrimalPollChoice) => {
-    console.log('VOTE: ', choice.label);
+  const [didVote, setDidVote] = createSignal(false);
 
+  const doVote = (choice: PrimalPollChoice) => {
     sendUserPollVote(props.poll, choice);
+    setDidVote(true);
+    console.log('VOTED: ', didVote())
   }
 
   const totalVotes = () => {
+    if (!props.poll.results) return 0;
     const choices = Object.keys(props.poll.results);
 
     return choices.reduce<number>((acc, id) => {
       return acc + (props.poll.results[id]?.votes || 0);
-    }, 0)
+    }, 0) + (didVote() ? 1 : 0)
   }
 
   const isExpiring = () => {
@@ -98,7 +103,7 @@ const UserPoll: Component<UserPollProps> = (props) => {
   }
 
   const hasVotedFor = (id: string) => {
-    return props.poll.noteActions.voted_for_option === id;
+    return didVote() || (props.poll.noteActions.voted_for_option === id);
   }
 
   const showVoteDetails = () => {
@@ -236,6 +241,30 @@ const UserPoll: Component<UserPollProps> = (props) => {
     updateReactionsState('topZaps', () => [...zaps]);
   };
 
+  const openReactionModal = (openOn = 'default') =>  {
+    app?.actions.openReactionModal(props.poll.id, {
+      likes: reactionsState.likes,
+      zaps: reactionsState.zapCount,
+      reposts: reactionsState.reposts,
+      quotes: reactionsState.quoteCount,
+      openOn,
+    });
+  };
+
+  const onContextMenuTrigger = () => {
+    app?.actions.openContextMenu(
+      props.poll,
+      noteContextMenu?.getBoundingClientRect(),
+      () => {
+        app?.actions.openCustomZapModal(customZapInfo());
+      },
+      openReactionModal,
+      (id: string, isRepost?: boolean) => {
+        props.onRemove && props.onRemove(id, isRepost);
+      },
+    );
+  }
+
   return (
     <div
       id={props.id}
@@ -259,6 +288,13 @@ const UserPoll: Component<UserPollProps> = (props) => {
                 <NoteAuthorInfo
                   author={props.poll.user}
                   time={props.poll.msg.created_at}
+                />
+              </div>
+
+              <div class={styles.upRightFloater}>
+                <NoteContextTrigger
+                  ref={noteContextMenu}
+                  onClick={onContextMenuTrigger}
                 />
               </div>
 
@@ -304,7 +340,7 @@ const UserPoll: Component<UserPollProps> = (props) => {
                       )}
                     </For>
                   </Match>
-                  <Match when={props.poll.noteActions.voted_for_option}>
+                  <Match when={hasVotedFor(props.poll.noteActions.voted_for_option || '')}>
                     <For each={props.poll.choices}>
                       {choice => (
                         <button

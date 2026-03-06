@@ -64,10 +64,10 @@ const VotesModal: Component<{
 
   const [selectedChoice, setSelectedChoice] = createSignal('');
 
-  const fetchVotes = async (id: string) => {
+  const fetchVotes = async (id: string, option: string) => {
     const poll = props.poll;
     if (!poll || !poll.choices || poll.choices.length < 1) return;
-    const { pollVotes } = await getPollVotes(id, poll.choices[0].id || '', {
+    const { pollVotes } = await getPollVotes(id, option, {
       limit: 20,
     });
 
@@ -77,7 +77,13 @@ const VotesModal: Component<{
   createEffect(on(() => props.poll, (poll, prev) => {
     if (!poll || poll.id === prev?.id) return;
 
-    fetchVotes(poll.id);
+    setSelectedChoice(poll.choices[0].id);
+  }));
+
+  createEffect(on(selectedChoice, (id, prev) => {
+    if (!id || id === prev || !props.poll) return;
+
+    fetchVotes(props.poll.id, id);
   }));
 
   const choices = () => {

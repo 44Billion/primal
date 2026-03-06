@@ -594,6 +594,103 @@ export const actions = {
       description: 'Label for quoting note from context menu',
     },
   },
+  pollContext: {
+    reactions: {
+      id: 'actions.noteContext.reactions',
+      defaultMessage: 'Reactions',
+      description: 'Label for note reactions from context menu',
+    },
+    zap: {
+      id: 'actions.noteContext.zapNote',
+      defaultMessage: 'Custom Zap',
+      description: 'Label for note zap from context menu',
+    },
+    copyLink: {
+      id: 'actions.noteContext.copyLink',
+      defaultMessage: 'Copy Poll Link',
+      description: 'Label for copy note link from context menu',
+    },
+    copyText: {
+      id: 'actions.noteContext.copytext',
+      defaultMessage: 'Copy Poll Question',
+      description: 'Label for copy note text from context menu',
+    },
+    copyId: {
+      id: 'actions.noteContext.copyId',
+      defaultMessage: 'Copy Poll ID',
+      description: 'Label for copy note ID from context menu',
+    },
+    copyRaw: {
+      id: 'actions.noteContext.copyRaw',
+      defaultMessage: 'Copy Raw Data',
+      description: 'Label for copy note raw data from context menu',
+    },
+    copyPubkey: {
+      id: 'actions.noteContext.copyPubkey',
+      defaultMessage: 'Copy User Public Key',
+      description: 'Label for copy note author\'s pubkey from context menu',
+    },
+    breadcast: {
+      id: 'actions.noteContext.breadcast',
+      defaultMessage: 'Broadcast Note',
+      description: 'Label for note broadcast from context menu',
+    },
+    muteAuthor: {
+      id: 'actions.noteContext.muteAuthor',
+      defaultMessage: 'Mute User',
+      description: 'Label for muting user from context menu',
+    },
+    unmuteAuthor: {
+      id: 'actions.noteContext.unmuteAuthor',
+      defaultMessage: 'Unmute User',
+      description: 'Label for unmuting user from context menu',
+    },
+    muteThread: {
+      id: 'actions.noteContext.muteThread',
+      defaultMessage: 'Mute Thread',
+      description: 'Label for muting thread from context menu',
+    },
+    unmuteThread: {
+      id: 'actions.noteContext.unmuteThread',
+      defaultMessage: 'Unmute Thread',
+      description: 'Label for unmuting thread from context menu',
+    },
+    editArticle: {
+      id: 'actions.noteContext.editArticle',
+      defaultMessage: 'Edit Article',
+      description: 'Label for edit article from context menu',
+    },
+    reportAuthor: {
+      id: 'actions.noteContext.reportAuthor',
+      defaultMessage: 'Report User',
+      description: 'Label for reporting user from context menu',
+    },
+    reportContent: {
+      id: 'actions.noteContext.reportContent',
+      defaultMessage: 'Report Content',
+      description: 'Label for reporting user from context menu',
+    },
+    repostNote: {
+      id: 'actions.noteContext.repostNote',
+      defaultMessage: 'Repost',
+      description: 'Label for reposting note from context menu',
+    },
+    requestDelete: {
+      id: 'actions.noteContext.requestDelete',
+      defaultMessage: 'Request Delete',
+      description: 'Label for edit article from context menu',
+    },
+    requestDeleteRepost: {
+      id: 'actions.noteContext.requestDeleteRepost',
+      defaultMessage: 'Request Delete Repost',
+      description: 'Label for edit article from context menu',
+    },
+    quoteNote: {
+      id: 'actions.noteContext.quoteNote',
+      defaultMessage: 'Quote',
+      description: 'Label for quoting note from context menu',
+    },
+  },
   articleOverviewContext: {
     edit: {
       id: 'actions.articleOverviewContext.edit',
