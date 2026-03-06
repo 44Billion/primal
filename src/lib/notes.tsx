@@ -531,6 +531,17 @@ export const sendPoll = (question: string, kind: Kind.UserPoll | Kind.ZapPoll, t
     created_at: created_at || Math.floor((new Date()).getTime() / 1000),
   };
 
+
+  // signEvent(event).then((se => {
+  //   console.log('EVENT: ', se);
+  // }))
+
+  // if (kind !== Kind.UserPoll) {
+    // return new Promise<SendNoteResult>((resolve) => {
+    //   resolve({ success: false });
+    // });
+  // }
+
   return new Promise<SendNoteResult>((resolve) => {
     sendEvent(event, {
       success: (pollEvent) => {
@@ -915,6 +926,35 @@ export const getPollVotes = (pollId: string, option: string, paging?: FeedPaging
       {cache: ["poll_votes", { event_id: pollId, option, limit, offset }]},
     ]));
   });
+
+  // return new Promise<PollVote[]>((resolve) => {
+  //   let votes: PollVote[] = [];
+
+  //   const unsub = subsTo(subId, {
+  //     onEvent: (_,event) => {
+  //       if (event.kind === Kind.UserPollVote) {
+  //         console.log('VOTE: ', event.pubkey)
+  //       }
+  //       if (event.kind === Kind.Metadata) {
+  //         console.log('User: ', event)
+  //       }
+  //     },
+  //     onEose: () => {
+  //       unsub();
+  //       resolve(votes);
+  //     },
+  //     onNotice: () => {
+  //       unsub();
+  //       resolve([]);
+  //     }
+  //   })
+
+  //   sendMessage(JSON.stringify([
+  //     "REQ",
+  //     subId,
+  //     {cache: ["poll_votes", { event_id: pollId, limit, offset }]},
+  //   ]));
+  // })
 };
 
 export const getEventReactions = (eventId: string, kind: number, subid: string, offset = 0) => {

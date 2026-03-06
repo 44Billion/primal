@@ -1050,6 +1050,10 @@ const EditBox: Component<{
 
       tags = [...tags, ...relayTags, ...mediaTagsToAdd, ...pollTags];
 
+      if (pollState.pollKind === Kind.ZapPoll && accountStore.publicKey) {
+        tags = [['p', accountStore.publicKey], ...tags];
+      }
+
       setIsPostingInProgress(true);
 
       const { success, reasons, note } = await sendPoll(
