@@ -1,6 +1,6 @@
 import { A } from '@solidjs/router';
 import { Component, Show } from 'solid-js';
-import { PrimalNote } from '../../types/primal';
+import { PrimalNote, PrimalUserPoll } from '../../types/primal';
 
 import styles from './Note.module.scss';
 import { useIntl } from '@cookbook/solid-intl';
@@ -11,7 +11,7 @@ import { useAppContext } from '../../contexts/AppContext';
 
 
 const NoteRepostHeader: Component<{
-  note?: PrimalNote,
+  note?: PrimalNote | PrimalUserPoll,
   id?: string,
 }> = (props) => {
   const intl = useIntl();
@@ -22,7 +22,7 @@ const NoteRepostHeader: Component<{
   const reposterName = () =>  authorName(repost()?.user);
 
   const others = () => {
-    const reposts = props.note?.post.reposts || 0;
+    const reposts = props.note?.post?.reposts || props.note?.stats?.reposts || 0;
 
     return reposts > 0 ? reposts - 1 : 0;
   }

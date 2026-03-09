@@ -89,7 +89,7 @@ import { StreamingData, getStreamingEvent } from "../../../lib/streaming";
 import { fetchUserProfile } from "../../../handleFeeds";
 import { accountStore, hasPublicKey, quoteNote, saveEmoji, setShowPin } from "../../../stores/accountStore";
 import { DecodedNaddr } from "nostr-tools/lib/types/nip19";
-import NewPoll, { calculateEndTimestamp, emptyPoll, getPollInput, PollState } from "../NewPoll";
+import NewPoll, { calculateEndTimestamp, emptyPoll, getPollInput, MIN_POLL_ANSWERS, PollState } from "../NewPoll";
 
 type AutoSizedTextArea = HTMLTextAreaElement & { _baseScrollHeight: number };
 
@@ -817,7 +817,7 @@ const EditBox: Component<{
     const choices = pollState.options;
 
     return question.length > 0 &&
-      choices.length >= 2 &&
+      choices.length >= MIN_POLL_ANSWERS &&
       choices.every(c => c.label.length > 0);
   }
 
@@ -1068,7 +1068,7 @@ const EditBox: Component<{
         toast?.sendSuccess(intl.formatMessage(tToast.publishPollSuccess));
         props.onSuccess && props.onSuccess({ success, reasons, note }, { noteRefs, userRefs, articleRefs, highlightRefs, relayHints });
         setIsPostingInProgress(false);
-        saveNoteDraft(accountStore.publicKey, '', rep?.noteId)
+        savePollDraft(accountStore.publicKey, emptyPoll(), rep?.noteId)
         clearEditor();
 
         return;

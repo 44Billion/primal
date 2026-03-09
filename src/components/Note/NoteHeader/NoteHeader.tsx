@@ -1,5 +1,5 @@
 import { Component, createEffect, createSignal, Show } from 'solid-js';
-import { MenuItem, NostrRelaySignedEvent, PrimalNote } from '../../../types/primal';
+import { MenuItem, NostrRelaySignedEvent, PrimalNote, PrimalUserPoll } from '../../../types/primal';
 
 import styles from './NoteHeader.module.scss';
 import { nip05Verification, truncateNpub, userName } from '../../../stores/profile';
@@ -18,7 +18,7 @@ import { useAppContext } from '../../../contexts/AppContext';
 import { accountStore, addToMuteList, removeFromMuteList } from '../../../stores/accountStore';
 
 const NoteHeader: Component<{
-  note: PrimalNote,
+  note: PrimalNote | PrimalUserPoll,
   openCustomZap?: () => void,
   id?: string,
   primary?: boolean,
@@ -33,12 +33,12 @@ const NoteHeader: Component<{
   const [confirmMuteUser, setConfirmMuteUser] = createSignal(false);
 
   const authorName = () => {
-    if (!props.note.user) {
-      return hexToNpub(props.note.post.pubkey);
+    if (!props.note?.user) {
+      return hexToNpub(props.note?.msg.pubkey);
     }
-    return props.note.user?.displayName ||
-      props.note.user?.name ||
-      truncateNpub(props.note.user.npub);
+    return props.note?.user?.displayName ||
+      props.note?.user?.name ||
+      truncateNpub(props.note?.user.npub);
   };
 
   const openContextMenu = (e: MouseEvent) => {
@@ -47,22 +47,22 @@ const NoteHeader: Component<{
   };
 
   const doMuteUser = () => {
-    addToMuteList(props.note.post.pubkey);
+    addToMuteList(props.note?.msg.pubkey);
   };
 
   const doUnmuteUser = () => {
-    removeFromMuteList(props.note.post.pubkey);
+    removeFromMuteList(props.note?.msg.pubkey);
   };
 
   const doReportUser = () => {
-    reportUser(props.note.user.pubkey, `report_user_${APP_ID}`, props.note.user);
+    reportUser(props.note?.user.pubkey, `report_user_${APP_ID}`, props.note?.user);
     setContext(false);
-    toaster?.sendSuccess(intl.formatMessage(tToast.noteAuthorReported, { name: userName(props.note.user)}));
+    toaster?.sendSuccess(intl.formatMessage(tToast.noteAuthorReported, { name: userName(props.note?.user)}));
   };
 
   const noteLinkId = () => {
       try {
-        return `/e/${props.note.noteId}`;
+        return `/e/${props.note?.noteId}`;
       } catch(e) {
         return '/404';
       }
@@ -75,32 +75,32 @@ const NoteHeader: Component<{
   };
 
   const copyNoteText = () => {
-    navigator.clipboard.writeText(`${props.note.post.content}`);
+    navigator.clipboard.writeText(`${props.note?.msg.content}`);
     setContext(false);
     toaster?.sendSuccess(intl.formatMessage(tToast.notePrimalTextCoppied));
   };
 
   const copyNoteId = () => {
-    navigator.clipboard.writeText(`${props.note.post.noteId}`);
+    navigator.clipboard.writeText(`${props.note?.noteId}`);
     setContext(false);
     toaster?.sendSuccess(intl.formatMessage(tToast.noteIdCoppied));
   };
 
   const copyRawData = () => {
-    navigator.clipboard.writeText(`${JSON.stringify(props.note.msg)}`);
+    navigator.clipboard.writeText(`${JSON.stringify(props.note?.msg)}`);
     setContext(false);
     toaster?.sendSuccess(intl.formatMessage(tToast.noteRawDataCoppied));
   };
 
   const copyUserNpub = () => {
-    navigator.clipboard.writeText(`${props.note.user.npub}`);
+    navigator.clipboard.writeText(`${props.note?.user.npub}`);
     setContext(false);
     toaster?.sendSuccess(intl.formatMessage(tToast.noteAuthorNpubCoppied));
   };
 
   const broadcastNote = async () => {
     const { success } = await broadcastEvent(
-      props.note.msg as NostrRelaySignedEvent,
+      props.note?.msg as NostrRelaySignedEvent,
     );
     setContext(false);
 
@@ -113,7 +113,7 @@ const NoteHeader: Component<{
 
   const onClickOutside = (e: MouseEvent) => {
     if (
-      !document?.getElementById(`note_context_${props.note.post.id}`)?.contains(e.target as Node)
+      !document?.getElementById(`note_context_${props.note?.msg.id}`)?.contains(e.target as Node)
     ) {
       setContext(false);
     }
@@ -129,75 +129,9 @@ const NoteHeader: Component<{
   });
 
   const isVerifiedByPrimal = () => {
-    return !!props.note.user.nip05 &&
-      props.note.user.nip05.endsWith('primal.net');
+    return !!props.note?.user.nip05 &&
+      props.note?.user.nip05.endsWith('primal.net');
   }
-
-  const noteContextForEveryone: MenuItem[] = [
-    {
-      label: intl.formatMessage(tActions.noteContext.zap),
-      action: () => {
-        props.openCustomZap && props.openCustomZap();
-        setContext(false);
-      },
-      icon: 'feed_zap',
-    },
-    {
-      label: intl.formatMessage(tActions.noteContext.copyLink),
-      action: copyNoteLink,
-      icon: 'copy_note_link',
-    },
-    {
-      label: intl.formatMessage(tActions.noteContext.copyText),
-      action: copyNoteText,
-      icon: 'copy_note_text',
-    },
-    {
-      label: intl.formatMessage(tActions.noteContext.copyId),
-      action: copyNoteId,
-      icon: 'copy_note_id',
-    },
-    {
-      label: intl.formatMessage(tActions.noteContext.copyRaw),
-      action: copyRawData,
-      icon: 'copy_raw_data',
-    },
-    {
-      label: intl.formatMessage(tActions.noteContext.breadcast),
-      action: broadcastNote,
-      icon: 'broadcast',
-    },
-    {
-      label: intl.formatMessage(tActions.noteContext.copyPubkey),
-      action: copyUserNpub,
-      icon: 'copy_pubkey',
-    },
-  ];
-
-  const noteContextForOtherPeople: MenuItem[] = [
-    {
-      label: intl.formatMessage(tActions.noteContext.muteAuthor),
-      action: () => {
-        setConfirmMuteUser(true);
-        setContext(false);
-      },
-      icon: 'mute_user',
-      warning: true,
-    },
-    {
-      label: intl.formatMessage(tActions.noteContext.reportAuthor),
-      action: () => {
-        setConfirmReportUser(true);
-        setContext(false);
-      },
-      icon: 'report',
-      warning: true,
-    },
-  ];
-
-  const noteContext = accountStore.publicKey !== props.note.post.pubkey ?
-      [ ...noteContextForEveryone, ...noteContextForOtherPeople] :
-      noteContextForEveryone;
 
   return (
     <div id={props.id} class={styles.header}>
@@ -207,7 +141,7 @@ const NoteHeader: Component<{
             title={props.note?.user?.npub}
           >
             <A
-              href={app?.actions.profileLink(props.note.user.npub) || ''}
+              href={app?.actions.profileLink(props.note?.user.npub) || ''}
             >
               <Avatar
                 user={props.note?.user}
@@ -224,17 +158,17 @@ const NoteHeader: Component<{
             </span>
 
             <VerificationCheck
-              user={props.note.user}
+              user={props.note?.user}
             />
           </div>
           <Show
-            when={props.note.user?.nip05}
+            when={props.note?.user?.nip05}
           >
             <span
               class={styles.verification}
-              title={props.note.user?.nip05}
+              title={props.note?.user?.nip05}
             >
-              {nip05Verification(props.note.user)}
+              {nip05Verification(props.note?.user)}
             </span>
           </Show>
         </div>

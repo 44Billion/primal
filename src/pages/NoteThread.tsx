@@ -287,6 +287,7 @@ const NoteThread: Component<{ noteId: string }> = (props) => {
                     <Match  when={primaryNote()?.msg.kind === Kind.UserPoll}>
                       <UserPoll
                         poll={primaryNote()}
+                        pollType="primary"
                       />
                     </Match>
                   </Switch>

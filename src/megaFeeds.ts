@@ -913,12 +913,36 @@ export const updateFeedPage = (page: MegaFeedPage, content: NostrEventContent) =
     return;
   }
 
-  if ([Kind.Text, Kind.Repost].includes(content.kind)) {
+  if ([Kind.Repost].includes(content.kind)) {
     const message = content as NostrNoteContent;
+
+    let repostedEvent: any;
+
+    try {
+      repostedEvent = JSON.parse(message.content);
+    } catch {}
+
+    console.log('REPOST: ', repostedEvent, message)
 
     let isAlreadyReposted = isRepostInCollection(page.notes, message);
 
     if (isAlreadyReposted) return;
+
+    if (repostedEvent.kind === Kind.Text) {
+      page.notes.push({ ...message });
+    }
+    if (repostedEvent.kind === Kind.UserPoll) {
+      page.userPolls.push({ ...message });
+    }
+    if (repostedEvent.kind === Kind.ZapPoll) {
+      page.zapPolls.push({ ...message });
+    }
+
+    return;
+  }
+
+  if ([Kind.Text].includes(content.kind)) {
+    const message = content as NostrNoteContent;
 
     page.notes.push({ ...message });
 
@@ -927,10 +951,6 @@ export const updateFeedPage = (page: MegaFeedPage, content: NostrEventContent) =
 
   if ([Kind.LongForm, Kind.LongFormShell].includes(content.kind)) {
     const message = content as NostrNoteContent;
-
-    let isAlreadyReposted = isRepostInCollection(page.notes, message);
-
-    if (isAlreadyReposted) return;
 
     page.reads.push({ ...message });
     return;

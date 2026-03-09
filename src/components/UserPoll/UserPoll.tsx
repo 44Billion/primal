@@ -6,7 +6,6 @@ import { PrimalPollChoice, PrimalUserPoll, ZapOption } from "../../types/primal"
 import { CustomZapInfo, useAppContext } from "../../contexts/AppContext";
 import Avatar from "../Avatar/Avatar";
 import NoteAuthorInfo from "../Note/NoteAuthorInfo";
-import ParsedNote from "../ParsedNote/ParsedNote";
 import ParsedPoll from "../ParsedNote/ParsedPoll";
 import { sendUserPollVote } from "../../lib/notes";
 import { dateFuture } from "../../lib/dates";
@@ -20,11 +19,15 @@ import { accountStore } from "../../stores/accountStore";
 import { useThreadContext } from "../../contexts/ThreadContext";
 import { useSettingsContext } from "../../contexts/SettingsContext";
 import NoteContextTrigger from "../Note/NoteContextTrigger";
+import NoteHeader from "../Note/NoteHeader/NoteHeader";
+import NoteTopZaps from "../Note/NoteTopZaps";
+import NoteRepostHeader from "../Note/NoteRepostHeader";
 
 export type UserPollProps = {
   id: string,
   poll: PrimalUserPoll
   hideContext?: boolean,
+  pollType?: 'feed' | 'primary' | 'notification' | 'reaction' | 'thread' | 'suggestion',
   onRemove?: (id: string, isRepost?: boolean) => void,
 }
 
@@ -33,6 +36,8 @@ const UserPoll: Component<UserPollProps> = (props) => {
   const app = useAppContext();
   const threadContext = useThreadContext();
   const settings = useSettingsContext();
+
+  const pollType = () => props.pollType || 'feed';
 
   const [reactionsState, updateReactionsState] = createStore<NoteReactionsState>({
     likes: props.poll.stats?.likes || 0,
@@ -68,8 +73,6 @@ const UserPoll: Component<UserPollProps> = (props) => {
     sendUserPollVote(props.poll, choice);
     setVotedFor(choice.id);
     setDidVote(true);
-
-    console.log('VOTED: ', didVote(), votedFor(), hasVotedFor(choice.id));
   }
 
   const totalVotes = () => {
@@ -284,49 +287,38 @@ const UserPoll: Component<UserPollProps> = (props) => {
   };
 
   return (
-    <div
-      id={props.id}
-      class={styles.userPoll}
-      data-event={props.poll.msg.id}
-      data-event-bech32={props.poll.noteId}
-      draggable={false}
-    >
-      <div
-        class={styles.userHeader}
-      >
+    <Switch>
+      <Match when={pollType() === 'primary'}>
+        <div
+          id={props.id}
+          class={styles.userPrimaryPoll}
+          data-event={props.poll.msg.id}
+          data-event-bech32={props.poll.noteId}
+          draggable={false}
+        >
+
+          <div class={styles.border}></div>
+
+          <div class={styles.header}>
+            <NoteHeader note={props.poll} primary={true} />
+          </div>
+
+          <div class={styles.upRightFloater}>
+            <NoteContextTrigger
+              ref={noteContextMenu}
+              onClick={onContextMenuTrigger}
+            />
+          </div>
+
           <div class={styles.content}>
-            <div class={styles.leftSide}>
-              <a href={app?.actions.profileLink(props.poll.user.npub) || ''}>
-                <Avatar user={props.poll.user} size="vs" />
-              </a>
-            </div>
 
-            <div class={styles.rightSide}>
-              <div>
-                <NoteAuthorInfo
-                  author={props.poll.user}
-                  time={props.poll.msg.created_at}
-                />
-              </div>
-
-              <div class={styles.upRightFloater}>
-                <NoteContextTrigger
-                  ref={noteContextMenu}
-                  onClick={onContextMenuTrigger}
-                />
-              </div>
-
-              <a
-                class={styles.question}
-                href={noteLinkId()}
-              >
-                <ParsedPoll
-                  note={props.poll}
-                  width={Math.min(510, window.innerWidth - 72)}
-                  margins={1}
-                  footerSize="short"
-                />
-              </a>
+            <div class={`${styles.message}`}>
+              <ParsedPoll
+                note={props.poll}
+                width={Math.min(510, window.innerWidth - 72)}
+                margins={1}
+                footerSize="short"
+              />
 
               <div class={styles.choices}>
                 <Switch>
@@ -401,6 +393,7 @@ const UserPoll: Component<UserPollProps> = (props) => {
                 <button
                   class={styles.totalVotes}
                   onClick={showVoteDetails}
+                  disabled={totalVotes() < 1}
                 >
                   {humanizeNumber(totalVotes(), false)} votes
                 </button>
@@ -416,15 +409,18 @@ const UserPoll: Component<UserPollProps> = (props) => {
                   </div>
                 </Show>
               </div>
+            </div>
 
-
-              <NoteTopZapsCompact
+            <div class={styles.topZaps}>
+              <NoteTopZaps
                 note={props.poll}
-                action={() => {}}
+                action={() => openReactionModal('zaps')}
                 topZaps={reactionsState.topZapsFeed}
                 topZapLimit={4}
               />
+            </div>
 
+            <div class={styles.footer}>
               <NoteFooter
                 note={props.poll}
                 state={reactionsState}
@@ -434,11 +430,175 @@ const UserPoll: Component<UserPollProps> = (props) => {
                 size={'short'}
                 onDelete={() => {}}
               />
-
             </div>
           </div>
-      </div>
-    </div>
+        </div>
+      </Match>
+
+      <Match when={true}>
+        <div
+          id={props.id}
+          class={styles.userPoll}
+          data-event={props.poll.msg.id}
+          data-event-bech32={props.poll.noteId}
+          draggable={false}
+        >
+          <div class={styles.header}>
+            <Show when={props.poll.repost}>
+              <NoteRepostHeader note={props.poll} />
+            </Show>
+          </div>
+          <div
+            class={styles.userHeader}
+          >
+            <div class={styles.content}>
+              <div class={styles.leftSide}>
+                <a href={app?.actions.profileLink(props.poll.user.npub) || ''}>
+                  <Avatar user={props.poll.user} size="vs" />
+                </a>
+              </div>
+
+              <div class={styles.rightSide}>
+                <div>
+                  <NoteAuthorInfo
+                    author={props.poll.user}
+                    time={props.poll.msg.created_at}
+                  />
+                </div>
+
+                <div class={styles.upRightFloater}>
+                  <NoteContextTrigger
+                    ref={noteContextMenu}
+                    onClick={onContextMenuTrigger}
+                  />
+                </div>
+
+                <a
+                  class={styles.question}
+                  href={noteLinkId()}
+                >
+                  <ParsedPoll
+                    note={props.poll}
+                    width={Math.min(510, window.innerWidth - 72)}
+                    margins={1}
+                    footerSize="short"
+                  />
+                </a>
+
+                <div class={styles.choices}>
+                  <Switch>
+                    <Match when={isExpired()}>
+                      <For each={props.poll.choices}>
+                        {choice => (
+                          <button
+                            class={`${styles.choiceResult} ${styles.locked}`}
+                          >
+                            <div class={styles.option}>
+                              <div
+                                class={`${styles.graph} ${['sunrise', 'ice'].includes(settings?.theme || '') ? styles.transparent : ''} ${hasVotedFor(choice.id) ? styles.highlight : ''}`}
+                                style={`--percent-width: ${choicePercent(choice.id)}%`}
+                              >
+                              </div>
+                              <div class={styles.label}>
+                                <div class={styles.text}>
+                                  {choice.label}
+                                </div>
+                                <Show when={winner()[0] === choice.id}>
+                                  <div class={styles.check}></div>
+                                </Show>
+                              </div>
+                            </div>
+                            <div class={styles.number}>
+                              {choicePercent(choice.id)}%
+                            </div>
+                          </button>
+                        )}
+                      </For>
+                    </Match>
+                    <Match when={hasVotedFor(props.poll.noteActions?.voted_for_option || votedFor())}>
+                      <For each={props.poll.choices}>
+                        {choice => (
+                          <button
+                            class={`${styles.choiceResult} ${styles.locked}`}
+                          >
+                            <div class={styles.option}>
+                              <div
+                                class={`${styles.graph} ${['sunrise', 'ice'].includes(settings?.theme || '') ? styles.transparent : ''} ${hasVotedFor(choice.id) ? styles.highlight : ''}`}
+                                style={`--percent-width: ${choicePercent(choice.id)}%`}
+                              ></div>
+                              <div class={styles.label}>
+                                <div class={styles.text}>
+                                  {choice.label}
+                                </div>
+                              </div>
+                            </div>
+                            <div class={styles.number}>
+                              {choicePercent(choice.id)}%
+                            </div>
+                          </button>
+                        )}
+                      </For>
+                    </Match>
+                    <Match when={true}>
+                      <For each={props.poll.choices}>
+                        {choice => (
+                          <button
+                            class={styles.choice}
+                            onClick={() => doVote(choice)}
+                          >
+                            {choice.label}
+                          </button>
+                        )}
+                      </For>
+                    </Match>
+                  </Switch>
+                </div>
+
+                <div class={styles.pollStats}>
+                  <button
+                    class={styles.totalVotes}
+                    onClick={showVoteDetails}
+                    disabled={totalVotes() < 1}
+                  >
+                    {humanizeNumber(totalVotes(), false)} votes
+                  </button>
+                  <Show when={isExpiring()}>
+                    <div>&middot;</div>
+                    <div class={styles.endsTime}>
+                      <Show
+                        when={isExpired()}
+                        fallback={<>{dateFuture(props.poll.endsAt).label} left</>}
+                      >
+                        Final results
+                      </Show>
+                    </div>
+                  </Show>
+                </div>
+
+
+                <NoteTopZapsCompact
+                  note={props.poll}
+                  action={() => {}}
+                  topZaps={reactionsState.topZapsFeed}
+                  topZapLimit={4}
+                />
+
+                <NoteFooter
+                  note={props.poll}
+                  state={reactionsState}
+                  updateState={updateReactionsState}
+                  customZapInfo={customZapInfo()}
+                  onZapAnim={addTopZapFeed}
+                  size={'short'}
+                  onDelete={() => {}}
+                />
+
+              </div>
+            </div>
+          </div>
+        </div>
+      </Match>
+    </Switch>
   )
 }
 

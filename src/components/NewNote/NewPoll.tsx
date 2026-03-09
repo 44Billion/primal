@@ -46,7 +46,10 @@ export const emptyPoll = (): PollState => ({
   externalInput: '',
 })
 
-export const POLL_ANSWER_LIMIT = 25;
+export const POLL_ANSWER_LIMIT = 35;
+
+export const MIN_POLL_ANSWERS = 2;
+export const MAX_POLL_ANSWERS = 5;
 
 export const POLL_LEGTH_OPTIONS = {
   days: Array.from({ length: 32 }, (_, i) => 0 + i).map(i => `${i} days`),
@@ -200,6 +203,7 @@ const NewPoll: Component<{
         <button
           class={styles.addChoice}
           onClick={addChoice}
+          disabled={props.pollState.options.length >= MAX_POLL_ANSWERS}
         >
           <div class={styles.addIcon}></div>
           <span>Add choice</span>

@@ -928,17 +928,23 @@ export const convertToUserPollsMega = (page: MegaFeedPage) => {
   for (i=0;i<page.userPolls.length;i++) {
     const pagePoll = page.userPolls[i];
 
-    const author = convertToUser(page.users[pagePoll.pubkey], pagePoll.pubkey);
-    const results = page.pollResults[pagePoll.id];
-    const topZaps = page.topZaps[pagePoll.id] || [];
-    const stats = page.noteStats[pagePoll.id];
+    // If this is a repost, parse it for the originsl note.
+    const poll = pagePoll.kind === Kind.Repost ? parseRepost(pagePoll, Kind.UserPoll) : pagePoll;
+
+    // if this is a repost extract repost info
+    const repost = pagePoll.kind === Kind.Repost ? extractRepostInfo(page, pagePoll) : undefined;
+
+    const author = convertToUser(page.users[poll.pubkey], poll.pubkey);
+    const results = page.pollResults[poll.id];
+    const topZaps = page.topZaps[poll.id] || [];
+    const stats = page.noteStats[poll.id];
 
 
-    const tags = pagePoll.tags || [];
+    const tags = poll.tags || [];
     const replyTo = extractReplyTo(tags);
-    const endsAt = parseInt((pagePoll.tags.find(t => t[0] === 'endsAt') || ['endsAt', `${now()}`])[1]);
+    const endsAt = parseInt((poll.tags.find(t => t[0] === 'endsAt') || ['endsAt', `${now()}`])[1]);
 
-    const choices = pagePoll.tags.reduce<{ id: string, label: string, index: number }[]>(
+    const choices = poll.tags.reduce<{ id: string, label: string, index: number }[]>(
       (acc, t, index) => {
         if (t[0] !== 'option') return acc;
         return [...acc, { id: t[1], label: t[2], index }];
@@ -954,22 +960,22 @@ export const convertToUserPollsMega = (page: MegaFeedPage) => {
       mentionedHighlights,
       mentionedZaps,
       mentionedLiveEvents,
-    } = extractMentions(page, pagePoll);
+    } = extractMentions(page, poll);
 
     const eventPointer: nip19.EventPointer = {
-      id: pagePoll.id,
-      author: pagePoll.pubkey,
-      kind: pagePoll.kind,
+      id: poll.id,
+      author: poll.pubkey,
+      kind: poll.kind,
       relays: tags.reduce((acc, t) => t[0] === 'r' && (t[1].startsWith('wss://' ) || t[1].startsWith('ws://')) ? [...acc, t[1]] : acc, []).slice(0, 2),
     };
 
     const eventPointerShort: nip19.EventPointer = {
-      id: pagePoll.id,
+      id: poll.id,
     };
 
     const newPoll: PrimalUserPoll = {
       user: author,
-      msg: pagePoll,
+      msg: poll,
       mentionedNotes,
       mentionedUsers,
       mentionedHighlights,
@@ -977,19 +983,20 @@ export const convertToUserPollsMega = (page: MegaFeedPage) => {
       mentionedZaps,
       mentionedLiveEvents,
       replyTo: replyTo && replyTo[1],
-      tags: pagePoll.tags,
-      id: pagePoll.id,
+      tags: poll.tags,
+      id: poll.id,
       noteId: nip19.neventEncode(eventPointer),
       noteIdShort: nip19.neventEncode(eventPointerShort),
-      pubkey: pagePoll.pubkey,
-      question: sanitize(pagePoll.content),
+      pubkey: poll.pubkey,
+      question: sanitize(poll.content),
       choices,
       results,
       relayHints: page.relayHints,
-      noteActions: (page.noteActions && page.noteActions[pagePoll.id]) ?? noActions(pagePoll.id),
+      noteActions: (page.noteActions && page.noteActions[poll.id]) ?? noActions(poll.id),
       endsAt,
       topZaps,
       stats,
+      repost,
     };
 
     userPolls.push(newPoll);

@@ -368,7 +368,7 @@ export const sendRepost = async (note: PrimalNote) => {
     content: JSON.stringify(note.msg),
     kind: Kind.Repost,
     tags: [
-      ['e', note.post.id],
+      ['e', note.msg.id],
       ['p', note.user.pubkey],
     ],
     created_at: Math.floor((new Date()).getTime() / 1000),
