@@ -36,14 +36,14 @@ const UserPoll: Component<UserPollProps> = (props) => {
 
   const [reactionsState, updateReactionsState] = createStore<NoteReactionsState>({
     likes: props.poll.stats?.likes || 0,
-    liked: props.poll.noteActions.liked,
+    liked: props.poll.noteActions?.liked || false,
     reposts: props.poll.stats?.reposts || 0,
-    reposted: props.poll.noteActions.reposted,
+    reposted: props.poll.noteActions?.reposted || false,
     replies: props.poll.stats?.replies || 0,
-    replied: props.poll.noteActions.replied,
+    replied: props.poll.noteActions?.replied || false,
     zapCount: props.poll.stats?.zaps || 0,
     satsZapped: props.poll.stats?.satszapped || 0,
-    zapped: props.poll.noteActions.zapped,
+    zapped: props.poll.noteActions?.zapped || false,
     zappedAmount: 0,
     zappedNow: false,
     isZapping: false,
@@ -113,7 +113,7 @@ const UserPoll: Component<UserPollProps> = (props) => {
   }
 
   const hasVotedFor = (id: string) => {
-    return didVote() ? votedFor() === id : (props.poll.noteActions.voted_for_option === id);
+    return didVote() ? votedFor() === id : (props.poll.noteActions?.voted_for_option === id);
   }
 
   const showVoteDetails = () => {
@@ -172,7 +172,7 @@ const UserPoll: Component<UserPollProps> = (props) => {
       updateReactionsState('isZapping', () => false);
       updateReactionsState('showZapAnim', () => false);
       updateReactionsState('hideZapIcon', () => false);
-      updateReactionsState('zapped', () => props.poll.noteActions.zapped);
+      updateReactionsState('zapped', () => props.poll.noteActions?.zapped);
     });
 
     removeTopZap(zapOption);
@@ -188,7 +188,7 @@ const UserPoll: Component<UserPollProps> = (props) => {
       updateReactionsState('isZapping', () => false);
       updateReactionsState('showZapAnim', () => false);
       updateReactionsState('hideZapIcon', () => false);
-      updateReactionsState('zapped', () => props.poll.noteActions.zapped);
+      updateReactionsState('zapped', () => props.poll.noteActions?.zapped);
     });
 
     removeTopZap(zapOption);
@@ -334,8 +334,7 @@ const UserPoll: Component<UserPollProps> = (props) => {
                     <For each={props.poll.choices}>
                       {choice => (
                         <button
-                          class={styles.choiceResult}
-                          onClick={() => doVote(choice)}
+                          class={`${styles.choiceResult} ${styles.locked}`}
                         >
                           <div class={styles.option}>
                             <div
@@ -359,12 +358,11 @@ const UserPoll: Component<UserPollProps> = (props) => {
                       )}
                     </For>
                   </Match>
-                  <Match when={hasVotedFor(props.poll.noteActions.voted_for_option || votedFor())}>
+                  <Match when={hasVotedFor(props.poll.noteActions?.voted_for_option || votedFor())}>
                     <For each={props.poll.choices}>
                       {choice => (
                         <button
-                          class={styles.choiceResult}
-                          onClick={() => doVote(choice)}
+                          class={`${styles.choiceResult} ${styles.locked}`}
                         >
                           <div class={styles.option}>
                             <div
