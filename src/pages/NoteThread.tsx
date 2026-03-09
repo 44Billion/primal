@@ -20,7 +20,7 @@ import ReplyToNoteSkeleton from '../components/Skeleton/ReplyToNoteSkeleton';
 import ThreadNoteSkeleton from '../components/Skeleton/ThreadNoteSkeleton';
 import { Transition } from 'solid-transition-group';
 import { APP_ID } from '../App';
-import { fetchNotes } from '../handleNotes';
+import { fetchEvents, fetchNotes } from '../handleNotes';
 import { isPhone } from '../utils';
 import { noteIdToHex } from '../lib/keys';
 import { useToastContext } from '../components/Toaster/Toaster';
@@ -80,7 +80,7 @@ const NoteThread: Component<{ noteId: string }> = (props) => {
       threadContext?.notes.filter(n =>
         n.id !== note.id &&
         // n.created_at <= note.created_at &&
-        !n.tags.find(t => t[0] === 'e' && (t[3] === 'reply' || t[3] === 'root' || t[3] === 'fork') && t[1] === note.id),
+        !n.tags?.find(t => t[0] === 'e' && (t[3] === 'reply' || t[3] === 'root' || t[3] === 'fork') && t[1] === note.id),
       ) || [],
       true,
     );
@@ -162,6 +162,7 @@ const NoteThread: Component<{ noteId: string }> = (props) => {
     highlightRefs: Record<string, any>,
     relayHints: Record<string, string>,
   }) => {
+    console.log('POSTED: ', result);
     const pNote = primaryNote();
     if (!meta || !result.note || !accountStore.activeUser || !pNote ) return;
 
@@ -172,9 +173,13 @@ const NoteThread: Component<{ noteId: string }> = (props) => {
 
     const subId = `posted_note_${APP_ID}`;
 
-    const notes = await fetchNotes(accountStore.publicKey, [result.note.id], subId);
+    const { notes, userPolls } = await fetchEvents(accountStore.publicKey, [result.note.id], subId);
 
-    threadContext?.actions.insertNote(notes[0]);
+    console.log('EVENTS: ', userPolls);
+
+    const event = result.note.kind === Kind.UserPoll ? userPolls[0] : notes[0];
+
+    threadContext?.actions.insertNote(event);
   };
 
 
@@ -228,18 +233,25 @@ const NoteThread: Component<{ noteId: string }> = (props) => {
               <div class={styles.parentsHolder}>
                 <For each={parentNotes()}>
                   {note =>
-                    <div>
-                      <Note
-                        note={note}
-                        parent={true}
-                        shorten={true}
-                        noteType="thread"
-                        onRemove={(id: string, isRepost?: boolean) => {
-                          if (isRepost) return;
-                          threadContext?.actions.removeEvent(id, 'notes');
-                        }}
-                      />
-                    </div>
+                    <Switch>
+                      <Match when={note?.msg.kind === Kind.Text}>
+                        <Note
+                          note={note}
+                          parent={true}
+                          shorten={true}
+                          noteType="thread"
+                          onRemove={(id: string, isRepost?: boolean) => {
+                            if (isRepost) return;
+                            threadContext?.actions.removeEvent(id, 'notes');
+                          }}
+                        />
+                      </Match>
+                      <Match  when={note?.msg.kind === Kind.UserPoll}>
+                        <UserPoll
+                          poll={note}
+                        />
+                      </Match>
+                    </Switch>
                   }
                 </For>
               </div>

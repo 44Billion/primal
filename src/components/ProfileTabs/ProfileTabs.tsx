@@ -27,6 +27,7 @@ import ProfileGalleryImageSkeleton from "../Skeleton/ProfileGalleryImageSkeleton
 import { scrollWindowTo } from "../../lib/scroll";
 
 import { accountStore, addToAllowlist, removeFromMuteList } from "../../stores/accountStore";
+import UserPoll from "../UserPoll/UserPoll";
 
 
 const ProfileTabs: Component<{
@@ -479,19 +480,33 @@ const ProfileTabs: Component<{
                     <div>
                       <For each={profile?.notes}>
                         {note => (
-                          <div class="animated">
-                            <Note
-                              note={note}
-                              shorten={true}
-                              onRemove={(id: string, isRepost?: boolean) => {
-                                if (note.pubkey !== accountStore.publicKey) {
-                                  profile?.actions.removeEvent(id, 'notes');
-                                  return;
-                                }
-                                profile?.actions.removeEvent(id, 'notes', isRepost);
-                              }}
-                            />
-                          </div>
+                          <Switch>
+                            <Match when={note.msg.kind === Kind.Text}>
+                              <div class="animated">
+                                <Note
+                                  note={note}
+                                  shorten={true}
+                                  onRemove={(id: string, isRepost?: boolean) => {
+                                    if (note.pubkey !== accountStore.publicKey) {
+                                      profile?.actions.removeEvent(id, 'notes');
+                                      return;
+                                    }
+                                    profile?.actions.removeEvent(id, 'notes', isRepost);
+                                  }}
+                                />
+                              </div>
+                            </Match>
+                            <Match when={note.msg.kind === Kind.UserPoll}>
+                              <div class="animated">
+                                <UserPoll
+                                  poll={note}
+                                  onRemove={(id: string) => {
+                                    profile?.actions.removeEvent(id, 'notes');
+                                  }}
+                                />
+                              </div>
+                            </Match>
+                          </Switch>
                         )}
                       </For>
                       <Paginator

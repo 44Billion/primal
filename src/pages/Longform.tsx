@@ -8,7 +8,7 @@ import { getHighlights, parseLinkPreviews, sendEvent } from "../lib/notes";
 import { subsTo } from "../sockets";
 
 import styles from './Longform.module.scss';
-import { FeedPage, NostrEventContent, NostrMentionContent, NostrNoteActionsContent, NostrNoteContent, NostrStatsContent, NostrTier, NostrUserContent, NoteActions, PrimalArticle, PrimalNote, PrimalUser, SendNoteResult, TopZap, ZapOption } from "../types/primal";
+import { FeedPage, NostrEventContent, NostrMentionContent, NostrNoteActionsContent, NostrNoteContent, NostrStatsContent, NostrUserContent, NoteActions, PrimalArticle, PrimalNote, PrimalUser, PrimalUserPoll, SendNoteResult, TopZap, ZapOption } from "../types/primal";
 import { getUserProfiles } from "../lib/profile";
 import { convertToUser, nip05Verification, userName } from "../stores/profile";
 import Avatar from "../components/Avatar/Avatar";
@@ -45,6 +45,7 @@ import { Transition } from "solid-transition-group";
 import { fetchReadThread } from "../megaFeeds";
 import { useToastContext } from "../components/Toaster/Toaster";
 import { accountStore } from "../stores/accountStore";
+import UserPoll from "../components/UserPoll/UserPoll";
 
 export type LongFormData = {
   title: string,
@@ -62,14 +63,14 @@ export type LongFormData = {
 export type LongformThreadStore = {
   article: PrimalArticle | undefined,
   page: FeedPage,
-  replies: PrimalNote[],
+  replies: (PrimalNote | PrimalUserPoll)[],
   users: PrimalUser[],
   isFetching: boolean,
-  lastReply: PrimalNote | undefined,
+  lastReply: PrimalNote | PrimalUserPoll | undefined,
   hasTiers: boolean,
   highlights: any[],
   selectedHighlight: any,
-  heightlightReplies: PrimalNote[],
+  heightlightReplies: (PrimalNote | PrimalUserPoll)[],
   heighlightsPage: FeedPage,
   replyToHighlight: any,
   noContent: boolean,
@@ -1158,16 +1159,27 @@ const Longform: Component< { naddr: string } > = (props) => {
 
             <div>
               <For each={store.replies}>
-                {reply => <Note
-                  note={reply}
-                  noteType='thread'
-                  shorten={true}
-                  size="xwide"
-                  defaultParentAuthor={store.article?.user}
-                  onRemove={(id: string) => {
-                    updateStore('replies', (rs) => rs.filter(r => r.noteId !== id));
-                  }}
-                />}
+                {reply => (
+                  <Switch>
+                    <Match when={reply?.msg.kind === Kind.Text}>
+                      <Note
+                        note={reply}
+                        noteType='thread'
+                        shorten={true}
+                        size="xwide"
+                        defaultParentAuthor={store.article?.user}
+                        onRemove={(id: string) => {
+                          updateStore('replies', (rs) => rs.filter(r => r.noteId !== id));
+                        }}
+                      />
+                    </Match>
+                    <Match  when={reply?.msg.kind === Kind.UserPoll}>
+                      <UserPoll
+                        poll={reply}
+                      />
+                    </Match>
+                  </Switch>
+                )}
               </For>
             </div>
           </div>

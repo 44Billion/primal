@@ -28,6 +28,7 @@ import {
   PrimalDraft,
   PrimalNote,
   PrimalUser,
+  PrimalUserPoll,
   PrimalZap,
   UserStats,
   VanityProfiles,
@@ -52,6 +53,8 @@ import ProfileAbout from "../components/ProfileAbout/ProfileAbout";
 import {
   emptyPaging,
   fetchMegaFeed,
+  fetchMegaMultiFeed,
+  filterAndSortEvents,
   filterAndSortNotes,
   filterAndSortReads,
   filterAndSortZaps,
@@ -69,7 +72,7 @@ export type ProfileContextStore = {
   knownProfiles: VanityProfiles,
   articles: PrimalArticle[],
   drafts: PrimalDraft[],
-  notes: PrimalNote[],
+  notes: (PrimalNote | PrimalUserPoll)[],
   replies: PrimalNote[],
   zaps: PrimalZap[],
   zappedNotes: PrimalNote[],
@@ -292,28 +295,28 @@ export const ProfileProvider = (props: { children: ContextChildren }) => {
     if (tab === 'notes') {
       const specification = {
         id: 'feed',
-        kind:'notes',
+        kinds: [Kind.Text, Kind.Repost, Kind.UserPoll, Kind.ZapPoll],
         notes: 'authored',
         pubkey,
       };
 
       updateStore('isFetching', () => true);
 
-      const { notes, paging } = await fetchMegaFeed(
+      const { notes, userPolls, paging } = await fetchMegaMultiFeed(
         accountStore.publicKey,
         JSON.stringify(specification),
         `profile_notes_${APP_ID}`,
         {
           limit,
           until,
-          offset: offset || store.notes.map(n => n.repost ? n.repost.note.created_at : (n.post.created_at || 0)),
+          offset: offset || store.notes.map(n => n.repost ? n.repost.note.created_at : (n.msg.created_at || 0)),
         },
       );
 
-      const sortedNotes = filterAndSortNotes(notes, paging);
+      const sortedEvents = filterAndSortEvents([...notes, ...userPolls], paging);
 
       updateStore('paging', 'notes', () => ({ ...paging }));
-      updateStore('notes', (ns) => [ ...ns, ...sortedNotes]);
+      updateStore('notes', (ns) => [ ...ns, ...(sortedEvents as (PrimalNote | PrimalUserPoll)[])]);
       updateStore('isFetching', () => false);
       return;
     }
@@ -741,7 +744,7 @@ export const ProfileProvider = (props: { children: ContextChildren }) => {
     if (store.notes[0]) {
       since = store.notes[0].repost ?
         store.notes[0].repost.note.created_at :
-        store.notes[0].post.created_at;
+        store.notes[0].msg.created_at || 0;
     }
 
     clearFuture();

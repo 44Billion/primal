@@ -1061,6 +1061,7 @@ const EditBox: Component<{
         pollState.pollKind,
         tags,
         createdAt,
+        true,
       );
 
       if (success && note) {

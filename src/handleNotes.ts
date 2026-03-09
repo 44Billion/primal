@@ -9,7 +9,7 @@ import { convertToArticles, convertToNotes } from "./stores/note";
 import { EventCoordinate, FeedPage, MegaFeedPage, NostrEventContent, NostrMentionContent, NostrNoteActionsContent, NostrNoteContent, NostrStatsContent, NostrUserContent, NoteActions, PrimalArticle, PrimalDraft, PrimalNote, PrimalUser, TopZap, UserStats } from "./types/primal";
 import { parseBolt11 } from "./utils";
 import { convertToDraftsMega } from "./stores/megaFeed";
-import { emptyMegaFeedPage, pageResolve, updateFeedPage } from "./megaFeeds";
+import { emptyMegaFeedPage, emptyMegaFeedResults, MegaFeedResults, pageResolve, updateFeedPage } from "./megaFeeds";
 
 export const fetchDrafts = (pubkey: string | undefined, ids: string[], subId: string) => {
   return new Promise<PrimalDraft[]>((resolve, reject) => {
@@ -33,6 +33,28 @@ export const fetchDrafts = (pubkey: string | undefined, ids: string[], subId: st
     getEvents(pubkey, [...ids], subId, true);
   });
 };
+
+export const fetchEvents = (pubkey: string | undefined, ids: string[], subId: string) => {
+  return new Promise<MegaFeedResults>((resolve) => {
+    let page: MegaFeedPage = {...emptyMegaFeedPage()};
+
+    const unsub = subsTo(subId, {
+      onEvent: (_, content) => {
+        content && updateFeedPage(page, content);
+      },
+      onEose: () => {
+        unsub();
+        resolve(pageResolve(page));
+      },
+      onNotice: (_, reason) => {
+        unsub();
+        resolve({ ...emptyMegaFeedResults() });
+      }
+    });
+
+    getEvents(pubkey, [...ids], subId, true);
+  });
+}
 
 export const fetchNotes = (pubkey: string | undefined, noteIds: string[], subId: string) => {
   return new Promise<PrimalNote[]>((resolve, reject) => {

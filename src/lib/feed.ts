@@ -344,7 +344,7 @@ export const getMultiThread = (user_pubkey: string | undefined, postId: string, 
   }
 
   let payload:  { user_pubkey?: string, limit: number, event_id: string, until?: number, kinds: number[] } =
-    { event_id, limit, kinds: [1,6,1068, 6969] } ;
+    { event_id, limit, kinds: [Kind.Text, Kind.Repost, Kind.UserPoll, Kind.ZapPoll] } ;
 
   if (user_pubkey) {
     payload.user_pubkey = user_pubkey;

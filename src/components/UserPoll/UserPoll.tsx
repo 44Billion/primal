@@ -62,19 +62,23 @@ const UserPoll: Component<UserPollProps> = (props) => {
   let latestTopZapFeed: string = '';
 
   const [didVote, setDidVote] = createSignal(false);
+  const [votedFor, setVotedFor] = createSignal('');
 
   const doVote = (choice: PrimalPollChoice) => {
     sendUserPollVote(props.poll, choice);
+    setVotedFor(choice.id);
     setDidVote(true);
-    console.log('VOTED: ', didVote())
+
+    console.log('VOTED: ', didVote(), votedFor(), hasVotedFor(choice.id));
   }
 
   const totalVotes = () => {
-    if (!props.poll.results) return 0;
-    const choices = Object.keys(props.poll.results);
+    const results = props.poll.results
+    if (!results) return didVote() ? 1 : 0;
+    const choices = Object.keys(results);
 
     return choices.reduce<number>((acc, id) => {
-      return acc + (props.poll.results[id]?.votes || 0);
+      return acc + (results[id]?.votes || 0);
     }, 0) + (didVote() ? 1 : 0)
   }
 
@@ -87,23 +91,29 @@ const UserPoll: Component<UserPollProps> = (props) => {
   }
 
   const choicePercent = (id: string) => {
-    const result = props.poll.results[id].votes;
+    const results = props.poll.results?.[id];
+    if (!results) return didVote() && votedFor() === id ? 100 : 0;
+    const votes = results.votes || 0;
     const total = totalVotes();
 
-    return ((result/total)*100).toFixed(1);
+    return ((votes/total)*100).toFixed(1);
   }
 
   const winner = () => {
-    const choices = Object.keys(props.poll.results);
+    const results = props.poll.results;
+
+    if (!results) return ['', 0];
+
+    const choices = Object.keys(results);
 
     return choices.reduce<[string, number]>((acc, id) => {
-      const votes = props.poll.results[id]?.votes || 0;
+      const votes = results[id]?.votes || 0;
       return votes >= acc[1] ? [id, votes] : acc;
     }, ['', 0])
   }
 
   const hasVotedFor = (id: string) => {
-    return didVote() || (props.poll.noteActions.voted_for_option === id);
+    return didVote() ? votedFor() === id : (props.poll.noteActions.voted_for_option === id);
   }
 
   const showVoteDetails = () => {
@@ -308,7 +318,7 @@ const UserPoll: Component<UserPollProps> = (props) => {
 
               <a
                 class={styles.question}
-                href={!props.onClick ? noteLinkId() : ''}
+                href={noteLinkId()}
               >
                 <ParsedPoll
                   note={props.poll}
@@ -349,7 +359,7 @@ const UserPoll: Component<UserPollProps> = (props) => {
                       )}
                     </For>
                   </Match>
-                  <Match when={hasVotedFor(props.poll.noteActions.voted_for_option || '')}>
+                  <Match when={hasVotedFor(props.poll.noteActions.voted_for_option || votedFor())}>
                     <For each={props.poll.choices}>
                       {choice => (
                         <button

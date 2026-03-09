@@ -523,7 +523,13 @@ export const sendArticle = async (articleData: ArticleEdit, tags: string[][]) =>
   return await sendEvent(event);
 }
 
-export const sendPoll = (question: string, kind: Kind.UserPoll | Kind.ZapPoll, tags: string[][], created_at?: number) => {
+export const sendPoll = (
+  question: string,
+  kind: Kind.UserPoll | Kind.ZapPoll,
+  tags: string[][],
+  created_at?: number,
+  waitForImport?: boolean,
+) => {
   const event = {
     content: question,
     kind,
@@ -546,8 +552,15 @@ export const sendPoll = (question: string, kind: Kind.UserPoll | Kind.ZapPoll, t
     sendEvent(event, {
       success: (pollEvent) => {
         if (pollEvent) {
-          triggerImportEvents([pollEvent], `import_${APP_ID}`)
-          resolve({ success: true, note: pollEvent });
+          triggerImportEvents([pollEvent], `import_${APP_ID}`, () => {
+            if (waitForImport) {
+              resolve({ success: true, note: pollEvent });
+            }
+          })
+
+          if (!waitForImport) {
+            resolve({ success: true, note: pollEvent });
+          }
           return;
         }
 

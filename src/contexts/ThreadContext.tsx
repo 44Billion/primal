@@ -58,7 +58,7 @@ export type ThreadContextStore = {
     setPrimaryNote: (context: PrimalNote | undefined) => void,
     fetchTopZaps: (noteId: string) => void,
     fetchUsers: (pubkeys: string[]) => void,
-    insertNote: (note: PrimalNote) => void,
+    insertNote: (note: PrimalNote | PrimalUserPoll) => void,
     removeEvent: (id: string, kind: 'notes', isRepost?: boolean) => void,
   }
 }
@@ -138,7 +138,7 @@ export const ThreadProvider = (props: { children: ContextChildren }) => {
   //   updateStore('isFetching', () => true);
   // }
 
-  const insertNote = (note: PrimalNote) => {
+  const insertNote = (note: PrimalNote | PrimalUserPoll) => {
     updateStore('notes', (nts) => [ { ...note }, ...nts]);
   }
 
