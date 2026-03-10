@@ -239,6 +239,14 @@ const VotesModal: Component<{
           <For each={votes}>
             {vote => (
               <div class={styles.voteDetails}>
+                <Show when={vote.amount}>
+                  <div class={styles.zappedAmount}>
+                    <div class={styles.zapIcon}></div>
+                    <div class={styles.amount}>
+                      {humanizeNumber(vote.amount || 0)}
+                    </div>
+                  </div>
+                </Show>
                 <a
                   href={app?.actions.profileLink(vote.user.npub) || ''}
                   onClick={() => props.onClose?.()}

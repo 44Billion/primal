@@ -893,6 +893,7 @@ export type PollVote = {
   id: string,
   pubkey: string,
   response: string,
+  amount?: number,
 }
 
 export const getPollVotes = (pollId: string, option: string, subId: string, paging?: FeedPaging) => {
@@ -1015,6 +1016,7 @@ export const getZapPollVotes = (pollId: string, option: string, subId: string, p
             id: zap.msg.id,
             pubkey: zap.receiver,
             response: (zap.tags.find((t: string[]) => t[0] === 'poll_option') || ['poll_option', ''])[1],
+            amount: zap.amount,
           };
 
           return [...acc, vote];

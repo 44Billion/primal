@@ -394,6 +394,7 @@ const ZapPoll: Component<UserPollProps> = (props) => {
                           onClick={() => doVote(choice, props.poll.zapLimits?.min || 0)}
                         >
                           {choice.label}
+                          <div class={styles.zapIcon}></div>
                         </button>
                       )}
                     </For>
@@ -559,6 +560,7 @@ const ZapPoll: Component<UserPollProps> = (props) => {
                             onClick={() => doVote(choice, props.poll.zapLimits?.min || 0)}
                           >
                             {choice.label}
+                            <div class={styles.zapIcon}></div>
                           </button>
                         )}
                       </For>
