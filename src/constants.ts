@@ -360,7 +360,7 @@ export const emojiRegex = /(?:\s|^)\:\w+\:/;
 export const lnRegex = /lnbc[a-zA-Z0-9]*/;
 export const lnUnifiedRegex = /bitcoin:[a-zA-Z0-9]*(\?.*)lightning=([a-zA-Z0-9]*)(&.*|$)/;
 
-export const hashtagRegex = /(?:\s|^)#[^\s!@#$%^&*(),.?":{}|<>]+/i;
+export const hashtagRegex = /(?:\s|^)#(?![0-9]+(?:\s|$))([a-zA-Z0-9]+)/i;
 export const linebreakRegex = /(\r\n|\r|\n)/ig;
 export const tagMentionRegex = /\#\[([0-9]*)\]/;
 export const noteRegex = /((note|nevent)1[qpzry9x8gf2tvdw0s3jn54khce6mua7l]+)\b/g;
