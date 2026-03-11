@@ -36,6 +36,7 @@ import { accountStore, checkNostrKey, doAfterLogin, loginUsingLocalNsec, logout,
 import { storeSec } from '../../lib/localStore';
 import GetStartedModal from '../LoginModal/GetStartedModal';
 import VotesModal from '../UserPoll/VotesModal';
+import ZapVote from '../CustomZap/ZapVote';
 
 export const [isHome, setIsHome] = createSignal(false);
 
@@ -154,6 +155,11 @@ const Layout: Component<any> = (props) => {
           onSuccess={app?.customZap?.onSuccess}
           onFail={app?.customZap?.onFail}
           onCancel={app?.customZap?.onCancel}
+        />
+
+        <ZapVote
+          open={app?.showZapVoteModal}
+          config={app?.voteZap}
         />
 
         <LnQrCodeModal

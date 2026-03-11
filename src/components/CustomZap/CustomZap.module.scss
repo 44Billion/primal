@@ -19,6 +19,7 @@
       font-size: 20px;
       font-weight: 600;
       line-height: 24px;
+      margin-left: 4px;
     }
 
     .units {
@@ -26,16 +27,41 @@
     }
   }
 
+  .limits {
+    margin-bottom: 20px;
+
+    color: var(--text-tertiary);
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 20px;
+
+    &.topMargin {
+      margin-top: 20px;
+    }
+  }
+
   .options {
     display: grid;
-    grid-template-columns: 120px 120px 120px;
+    grid-template-columns: 1fr 1fr 1fr;
     grid-column-gap: 12px;
     grid-row-gap: 12px;
     margin-top: 24px;
     margin-bottom: 20px;
 
+    &.singleOption {
+      display: none;
+    }
+
+    &.doubleOption, &.quadrupleOption {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    &.tripleOption {
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+
     .zapOption {
-      width: 120px;
+      width: 100%;
       height: 36px;
       border-radius: 18px;
       border: none;
@@ -118,6 +144,10 @@
   background: var(--sidebar-section-icon-gradient);
   -webkit-mask: url(../../assets/icons/explore/zaps_hollow.svg) no-repeat 2px 0 / 19px 22px;
   mask: url(../../assets/icons/explore/zaps_hollow.svg) no-repeat 2px 0 / 19px 22px;
+}
+
+.spacer {
+  margin-bottom: 20px;
 }
 
 .customAmount {

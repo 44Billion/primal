@@ -18,6 +18,7 @@ import {
   PrimalArticle,
   PrimalDVM,
   PrimalNote,
+  PrimalPollChoice,
   PrimalUser,
   PrimalUserPoll,
   ZapOption,
@@ -61,6 +62,15 @@ export type CustomZapInfo = {
   dvm?: PrimalDVM,
   stream?: StreamingData,
   streamAuthor?: PrimalUser,
+  onConfirm: (zapOption: ZapOption) => void,
+  onSuccess: (zapOption: ZapOption) => void,
+  onFail: (zapOption: ZapOption) => void,
+  onCancel: (zapOption: ZapOption) => void,
+};
+
+export type VoteZapInfo = {
+  poll: PrimalUserPoll,
+  choice: PrimalPollChoice,
   onConfirm: (zapOption: ZapOption) => void,
   onSuccess: (zapOption: ZapOption) => void,
   onFail: (zapOption: ZapOption) => void,
@@ -121,7 +131,9 @@ export type AppContextStore = {
   reactionStats: ReactionStats,
   showVotesModal: PrimalUserPoll | undefined,
   showCustomZapModal: boolean,
+  showZapVoteModal: boolean,
   customZap: CustomZapInfo | undefined,
+  voteZap: VoteZapInfo | undefined,
   showNoteContextMenu: boolean,
   noteContextMenuInfo: NoteContextMenuInfo | undefined,
   showStreamContextMenu: boolean,
@@ -155,6 +167,9 @@ export type AppContextStore = {
     openCustomZapModal: (custonZapInfo: CustomZapInfo) => void,
     closeCustomZapModal: () => void,
     resetCustomZap: () => void,
+    openVoteZapModal: (custonZapInfo: VoteZapInfo) => void,
+    closeVoteZapModal: () => void,
+    resetVoteZap: () => void,
     openContextMenu: (
       note: PrimalNote | PrimalArticle | PrimalUserPoll,
       position: DOMRect | undefined,
@@ -226,6 +241,8 @@ const initialData: Omit<AppContextStore, 'actions'> = {
   showVotesModal: undefined,
   showCustomZapModal: false,
   customZap: undefined,
+  showZapVoteModal: false,
+  voteZap: undefined,
   showNoteContextMenu: false,
   noteContextMenuInfo: undefined,
   showArticleOverviewContextMenu: false,
@@ -306,6 +323,19 @@ export const AppProvider = (props: { children: JSXElement }) => {
 
   const resetCustomZap = () => {
     updateStore('customZap', () => undefined);
+  };
+
+  const openVoteZapModal = (customZapInfo: VoteZapInfo) => {
+    updateStore('voteZap', () => ({ ...customZapInfo }));
+    updateStore('showZapVoteModal', () => true);
+  };
+
+  const closeVoteZapModal = () => {
+    updateStore('showZapVoteModal', () => false);
+  };
+
+  const resetVoteZap = () => {
+    updateStore('voteZap', () => undefined);
   };
 
   const openContextMenu = (
@@ -700,6 +730,9 @@ const onSocketClose = (closeEvent: CloseEvent) => {
       openCustomZapModal,
       closeCustomZapModal,
       resetCustomZap,
+      openVoteZapModal,
+      closeVoteZapModal,
+      resetVoteZap,
       openContextMenu,
       closeContextMenu,
       openStreamContextMenu,

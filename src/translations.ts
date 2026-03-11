@@ -743,6 +743,11 @@ export const actions = {
     defaultMessage: 'Reactions ({count})',
     description: 'Label for reactions',
   },
+  vote: {
+    id: 'actions.vote',
+    defaultMessage: 'Vote',
+    description: 'Label for vote',
+  },
 };
 
 export const branding = {

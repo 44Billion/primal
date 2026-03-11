@@ -121,6 +121,7 @@ const CustomZap: Component<{
           [Kind.LongForm]: zapArticle,
           [Kind.LongFormShell]: zapArticle,
           [Kind.UserPoll]: zapNote,
+          [Kind.ZapPoll]: zapNote,
         }
 
         const success = await zappers[note.msg.kind](

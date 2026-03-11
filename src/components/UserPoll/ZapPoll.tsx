@@ -22,7 +22,6 @@ import NoteContextTrigger from "../Note/NoteContextTrigger";
 import NoteHeader from "../Note/NoteHeader/NoteHeader";
 import NoteTopZaps from "../Note/NoteTopZaps";
 import NoteRepostHeader from "../Note/NoteRepostHeader";
-import { zapVote } from "../../lib/zap";
 
 export type UserPollProps = {
   id: string,
@@ -69,22 +68,48 @@ const ZapPoll: Component<UserPollProps> = (props) => {
 
   const [didVote, setDidVote] = createSignal(false);
   const [votedFor, setVotedFor] = createSignal('');
+  const [votedSats, setVotedSats] = createSignal(props.poll.zapLimits?.min || 0);
 
-  const doVote = async (choice: PrimalPollChoice, amount: number) => {
+  const doVote = async (choice: PrimalPollChoice) => {
 
-    const success = await zapVote(
-      props.poll,
-      accountStore.publicKey,
-      amount,
-      choice.id,
-      accountStore.activeNWC,
-    );
+    app?.actions.openVoteZapModal({
+      poll: props.poll,
+      choice,
+      onConfirm: (zapOption: ZapOption) => {
+        app?.actions.closeVoteZapModal();
+        setVotedFor(choice.id);
+        setDidVote(true);
+        setVotedSats(zapOption.amount || 0);
+        batch(() => {
+          updateReactionsState('zappedAmount', () => zapOption.amount || 0);
+          updateReactionsState('satsZapped', (z) => z + (zapOption.amount || 0));
+          updateReactionsState('zapped', () => true);
+          updateReactionsState('showZapAnim', () => true)
+        });
+      },
+      onSuccess: (zapOption: ZapOption) => {
+        setVotedFor(choice.id);
+        setDidVote(true);
+        setVotedSats(zapOption.amount || 0);
+        app?.actions.closeVoteZapModal();
+        app?.actions.resetVoteZap();
+      },
+      onFail: (zapOption: ZapOption) => {
+        setVotedFor('');
+        setDidVote(false);
+        setVotedSats(0);
+        app?.actions.closeVoteZapModal();
+        app?.actions.resetVoteZap();
+      },
+      onCancel: (zapOption: ZapOption) => {
+        setVotedFor('');
+        setDidVote(false);
+        setVotedSats(0);
+        app?.actions.closeVoteZapModal();
+        app?.actions.resetVoteZap();
+      },
+    })
 
-    if (!success) return;
-
-    sendUserPollVote(props.poll, choice);
-    setVotedFor(choice.id);
-    setDidVote(true);
   }
 
   const totalVotes = () => {
@@ -97,6 +122,16 @@ const ZapPoll: Component<UserPollProps> = (props) => {
     }, 0) + (didVote() ? 1 : 0)
   }
 
+  const totalSats = () => {
+    const results = props.poll.results
+    if (!results) return didVote() ? 1 : 0;
+    const choices = Object.keys(results);
+
+    return choices.reduce<number>((acc, id) => {
+      return acc + (results[id]?.satszapped || 0);
+    }, 0) + (didVote() ? votedSats() : 0)
+  }
+
   const isExpiring = () => {
     return props.poll.endsAt > (props.poll.msg.created_at || 0)
   }
@@ -107,11 +142,17 @@ const ZapPoll: Component<UserPollProps> = (props) => {
 
   const choicePercent = (id: string) => {
     const results = props.poll.results?.[id];
-    if (!results) return didVote() && votedFor() === id ? 100 : 0;
-    const votes = results.votes || 0;
-    const total = totalVotes();
+    if (!results) return didVote() && votedFor() === id ? votedSats() : 0;
+    const votes = results.satszapped || 0;
+    const total = totalSats();
 
     return ((votes/total)*100).toFixed(1);
+  }
+
+  const choiceZaps = (id: string) => {
+    const results = props.poll.results?.[id];
+    if (!results) return didVote() && votedFor() === id ? votedSats() : 0;
+    return results.satszapped || 0;
   }
 
   const winner = () => {
@@ -356,7 +397,7 @@ const ZapPoll: Component<UserPollProps> = (props) => {
                             </div>
                           </div>
                           <div class={styles.number}>
-                            {choicePercent(choice.id)}%
+                            {choiceZaps(choice.id)} sats
                           </div>
                         </button>
                       )}
@@ -380,7 +421,7 @@ const ZapPoll: Component<UserPollProps> = (props) => {
                             </div>
                           </div>
                           <div class={styles.number}>
-                            {choicePercent(choice.id)}%
+                            {choiceZaps(choice.id)} sats
                           </div>
                         </button>
                       )}
@@ -391,7 +432,7 @@ const ZapPoll: Component<UserPollProps> = (props) => {
                       {choice => (
                         <button
                           class={styles.choice}
-                          onClick={() => doVote(choice, props.poll.zapLimits?.min || 0)}
+                          onClick={() => doVote(choice)}
                         >
                           {choice.label}
                           <div class={styles.zapIcon}></div>
@@ -522,7 +563,7 @@ const ZapPoll: Component<UserPollProps> = (props) => {
                               </div>
                             </div>
                             <div class={styles.number}>
-                              {choicePercent(choice.id)}%
+                              {choiceZaps(choice.id)} sats
                             </div>
                           </button>
                         )}
@@ -546,7 +587,7 @@ const ZapPoll: Component<UserPollProps> = (props) => {
                               </div>
                             </div>
                             <div class={styles.number}>
-                              {choicePercent(choice.id)}%
+                              {choiceZaps(choice.id)} sats
                             </div>
                           </button>
                         )}
@@ -557,7 +598,7 @@ const ZapPoll: Component<UserPollProps> = (props) => {
                         {choice => (
                           <button
                             class={styles.choice}
-                            onClick={() => doVote(choice, props.poll.zapLimits?.min || 0)}
+                            onClick={() => doVote(choice)}
                           >
                             {choice.label}
                             <div class={styles.zapIcon}></div>

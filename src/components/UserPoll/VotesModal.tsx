@@ -157,6 +157,12 @@ const VotesModal: Component<{
     return ((votes/total)*100).toFixed(1);
   }
 
+  const choiceZaps = (id: string) => {
+    const results = props.poll?.results?.[id];
+    if (!results) return 0;
+    return results.satszapped || 0;
+  }
+
   const isExpiring = () => {
     return (props.poll?.endsAt || 0) > (props.poll?.msg?.created_at || 0)
   }
@@ -199,7 +205,14 @@ const VotesModal: Component<{
                   </div>
                 </div>
                 <div class={styles.number}>
-                  <div>{choicePercent(choice.id)}%</div>
+                  <Show
+                    when={props.poll?.msg.kind === Kind.ZapPoll}
+                    fallback={
+                      <div>{choicePercent(choice.id)}%</div>
+                    }
+                  >
+                    <div>{choiceZaps(choice.id)} sats</div>
+                  </Show>
                   <div class={styles.moreVotes}>see votes</div>
                 </div>
               </button>

@@ -27,6 +27,10 @@ export const zapOverNWC = async (pubkey: string, nwcEnc: string, invoice: string
     relayWorker.onmessage = (e: MessageEvent<{ event: NostrEvent, secret: string, pubkey: string}>) => {
       const {event, secret, pubkey } = e.data;
 
+      if (!secret) {
+        console.error('Failed NWC payment: No secret');
+      }
+
       const decoded = nip04.decrypt(hexToBytes(secret), pubkey, event.content);
       const content = JSON.parse(decoded);
 
@@ -486,6 +490,7 @@ export const zapVote = async (
   sender: string | undefined,
   amount: number,
   option: string,
+  comment = '',
   nwc?: string[],
 ) => {
   if (!sender) {
@@ -511,6 +516,11 @@ export const zapVote = async (
     amount: sats,
     relays: [relay],
   };
+
+  if (comment.length > 0) {
+    // @ts-ignore
+    payload.comment = comment;
+  }
 
   const zapReq = makeZapPollRequest(payload, option);
 

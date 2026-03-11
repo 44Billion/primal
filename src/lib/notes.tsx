@@ -894,6 +894,7 @@ export type PollVote = {
   pubkey: string,
   response: string,
   amount?: number,
+  message?: string,
 }
 
 export const getPollVotes = (pollId: string, option: string, subId: string, paging?: FeedPaging) => {
@@ -948,11 +949,16 @@ export const getZapPollVotes = (pollId: string, option: string, subId: string, p
 
   return new Promise<PollVote[]>((resolve) => {
 
-    const users: Record<string, any> = {};
-    const zaps: any[] = [];
+    let users: Record<string, any> = {};
+    let zaps: any[] = [];
+    let elements: string[] = [];
+
 
     const unsub = subsTo(subId, {
       onEvent: (_, content) => {
+        if (content.kind === Kind.FeedRange) {
+          elements = (JSON.parse(content.content) || { elements: []}).elements as string[];
+        }
         if (content?.kind === Kind.Metadata) {
           let user = JSON.parse(content.content);
 
@@ -1017,6 +1023,7 @@ export const getZapPollVotes = (pollId: string, option: string, subId: string, p
             pubkey: zap.receiver,
             response: (zap.tags.find((t: string[]) => t[0] === 'poll_option') || ['poll_option', ''])[1],
             amount: zap.amount,
+            message: zap.message,
           };
 
           return [...acc, vote];
