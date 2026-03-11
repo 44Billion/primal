@@ -267,17 +267,17 @@ const NoteContextMenu: Component<{
         icon: 'feed_zap_2',
       },
       {
-        label: props.data?.note?.msg.kind === Kind.UserPoll ? intl.formatMessage(tActions.pollContext.copyLink) : intl.formatMessage(tActions.noteContext.copyLink),
+        label: props.data?.note?.msg.kind === Kind.UserPoll || Kind.ZapPoll ? intl.formatMessage(tActions.pollContext.copyLink) : intl.formatMessage(tActions.noteContext.copyLink),
         action: copyNoteLink,
         icon: 'copy_note_link_2',
       },
       {
-        label: props.data?.note?.msg.kind === Kind.UserPoll ? intl.formatMessage(tActions.pollContext.copyText) : intl.formatMessage(tActions.noteContext.copyText),
+        label: props.data?.note?.msg.kind === Kind.UserPoll || Kind.ZapPoll ? intl.formatMessage(tActions.pollContext.copyText) : intl.formatMessage(tActions.noteContext.copyText),
         action: copyNoteText,
         icon: 'copy_note_text',
       },
       {
-        label: props.data?.note?.msg.kind === Kind.UserPoll ? intl.formatMessage(tActions.pollContext.copyId) : intl.formatMessage(tActions.noteContext.copyId),
+        label: props.data?.note?.msg.kind === Kind.UserPoll || Kind.ZapPoll ? intl.formatMessage(tActions.pollContext.copyId) : intl.formatMessage(tActions.noteContext.copyId),
         action: copyNoteId,
         icon: 'copy_note_id',
       },

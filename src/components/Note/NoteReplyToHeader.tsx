@@ -22,6 +22,7 @@ const NoteReplyHeader: Component<{
     const mentions = props.note.mentionedNotes;
     const mentionedReads = props.note.mentionedArticles;
     const mentionedUserPolls = props.note.mentionedUserPolls;
+    const mentionedZapPolls = props.note.mentionedZapPolls;
 
     if (replyTo && mentions && mentions[replyTo]) {
       return mentions[replyTo].user || props.defaultParentAuthor;
@@ -45,6 +46,10 @@ const NoteReplyHeader: Component<{
 
     if (replyTo && mentionedUserPolls && mentionedUserPolls[replyTo]) {
       return mentionedUserPolls[replyTo].user || props.defaultParentAuthor;
+    }
+
+    if (replyTo && mentionedZapPolls && mentionedZapPolls[replyTo]) {
+      return mentionedZapPolls[replyTo].user || props.defaultParentAuthor;
     }
 
     return props.defaultParentAuthor;
