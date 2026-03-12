@@ -129,7 +129,7 @@ const Downloads: Component = () => {
 
         <div class={styles.promoVideo}>
           <NoteVideo
-            src='https://m.primal.net/MAww.mp4'
+            src='https://blossom.primal.net/e8f331d997e9ab7924aaa44c994bf82dc12dc069291c725475531ce9d363d2c4.mp4'
             width={600}
           />
         </div>
