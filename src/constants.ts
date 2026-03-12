@@ -375,7 +375,7 @@ export const primalUserRegex = /(http(s?):\/\/)([/|.|\w|\s|-])*\/(npub|nprofile)
 
 export const addrRegex = /((naddr)1[qpzry9x8gf2tvdw0s3jn54khce6mua7l]+)\b/;
 export const addrRegexG = /((naddr)1[qpzry9x8gf2tvdw0s3jn54khce6mua7l]+)\b/g;
-export const editMentionRegex = /(?:\s|^)@\`(.*?)\`/ig;
+export const editMentionRegex = /(?:\s|^|\()@\`(.*?)\`/ig;
 export const imageRegex = /(http(s?):)([/|.|\w|\s|-])*\.(?:png|jpg|jpeg|webp|gif|format=png)/;
 export const imageRegexG = /(http(s?):)([/|.|\w|\s|-])*\.(?:png|jpg|jpeg|webp|gif|format=png)/g;
 export const imageRegexEnd = /(http(s?):)([/|.|\w|\s|-])*\.(?:png|jpg|jpeg|webp|gif|format=png)$/;

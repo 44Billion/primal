@@ -428,7 +428,7 @@ const EditBox: Component<{
       mentionCursorPosition = getCaretCoordinates(input, (input.selectionStart || 0));
 
       // Ignore if `@` is a part of a word
-      if ((input.selectionStart || 0) > 0 && ![' ', '\r\n', '\r', '\n'].includes(input.value[(input.selectionStart || 0)-1])) {
+      if ((input.selectionStart || 0) > 0 && ![' ', '\r\n', '\r', '\n', '(', ')'].includes(input.value[(input.selectionStart || 0)-1])) {
         return false;
       }
 
@@ -1345,12 +1345,15 @@ const EditBox: Component<{
       const [_, name] = url.split('\`');
       const user = Object.values(userRefs).find(ref => userName(ref) === name);
 
+      const prefix = _.split('@')[0];
+
       const link = user ?
         MentionedUserLink({ user, openInNewTab: true}) :
         <span class='linkish'> @{name}</span>;
 
+      const fallback = `@${name}`;
         // @ts-ignore
-      return ` ${link.outerHTML}` || ` @${name}`;
+      return ` ${prefix}${link.outerHTML || fallback}`;
     });
   };
 

@@ -534,6 +534,11 @@ const ParsedNote: Component<{
 
     if (isUserMention(token)) {
       lastSignificantContent = 'usermention';
+      if (token.startsWith('(')) {
+        updateContent(content, 'text', token[0]);
+        updateContent(content, 'usermention', token.slice(1));
+        return;
+      }
       updateContent(content, 'usermention', token);
       return;
     }
