@@ -57,16 +57,10 @@ import {
   readNoteDraft,
   readNoteDraftMediaTags,
   readNoteDraftUserRefs,
-  readPollDraft,
-  readPollDraftMediaTags,
-  readPollDraftUserRefs,
   readSecFromStorage,
   saveNoteDraft,
   saveNoteDraftMediaTags,
   saveNoteDraftUserRefs,
-  savePollDraft,
-  savePollDraftMediaTags,
-  savePollDraftUserRefs,
 } from "../../../lib/localStore";
 import { useMediaContext } from "../../../contexts/MediaContext";
 import { hookForDev } from "../../../lib/devTools";
@@ -149,7 +143,6 @@ const EditBox: Component<{
   const [referencedArticles, setReferencedArticles] = createStore<Record<string, FeedPage>>();
 
   const [isConfirmEditorClose, setConfirmEditorClose] = createSignal(false);
-  const [isConfirmEditorToPoll, setConfirmEditorToPoll] = createSignal(false);
   const [isConfirmEditorRemovePoll, setConfirmEditorRemovePoll] = createSignal(false);
 
   const [fileToUpload, setFileToUpload] = createSignal<File | undefined>();
@@ -163,13 +156,6 @@ const EditBox: Component<{
 
   const noteHasInvoice = (text: string) => {
     const r =/(\s+|\r\n|\r|\n|^)lnbc[a-zA-Z0-9]+/;
-    const test = r.test(text);
-
-    return test
-  };
-
-  const noteHasCashu = (text: string) => {
-    const r =/(\s+|\r\n|\r|\n|^)cashuA[a-zA-Z0-9]+/;
     const test = r.test(text);
 
     return test
@@ -637,44 +623,30 @@ const EditBox: Component<{
   };
 
   createEffect(() => {
-    if (props.open && !isCreatingPoll()) {
+    if (props.open) {
       const draft = readNoteDraft(accountStore.publicKey, props.replyToNote?.noteId);
       const draftUserRefs = readNoteDraftUserRefs(accountStore.publicKey, props.replyToNote?.noteId);
       const mTags = readNoteDraftMediaTags(accountStore.publicKey);
 
       setUserRefs(reconcile(draftUserRefs));
-      setMessage((msg) => {
-        if (msg.length > 0) return msg;
-        const newMsg = `${msg}${draft}`;
 
-        if (textArea) {
-          textArea.value = newMsg;
-          textArea.dispatchEvent(new Event('input', { bubbles: true }));
-          textArea.focus();
-        }
-
-        return newMsg;
-      });
-
-      if (mTags) {
-        updateMediaTags([...mTags]);
+      if (isCreatingPoll()) {
+        setPollState('question', (q) => q.length > 0 ? q : draft);
       }
+      else {
+        setMessage((msg) => {
+          if (msg.length > 0) return msg;
+          const newMsg = `${msg}${draft}`;
 
-      if (accountStore.quotedNote) {
-        addQuote(accountStore.quotedNote);
+          if (textArea) {
+            textArea.value = newMsg;
+            textArea.dispatchEvent(new Event('input', { bubbles: true }));
+            textArea.focus();
+          }
+
+          return newMsg;
+        });
       }
-
-      return;
-    }
-
-    if (props.open && isCreatingPoll()) {
-      const draft = readPollDraft(accountStore.publicKey, props.replyToNote?.noteId);
-      const draftUserRefs = readPollDraftUserRefs(accountStore.publicKey, props.replyToNote?.noteId);
-      const mTags = readPollDraftMediaTags(accountStore.publicKey);
-
-      setUserRefs(reconcile(draftUserRefs));
-
-      setPollState(() => ({...draft}));
 
       if (mTags) {
         updateMediaTags([...mTags]);
@@ -692,23 +664,13 @@ const EditBox: Component<{
   })
 
   createEffect(() => {
-    if (message().length === 0) return;
+    let text = isCreatingPoll() ? pollState.question : message();
+    if (text.trim().length === 0) return;
 
     // save draft just in case there is an unintended interuption
-    saveNoteDraft(accountStore.publicKey, message(), props.replyToNote?.noteId);
+    saveNoteDraft(accountStore.publicKey, text, props.replyToNote?.noteId);
     saveNoteDraftUserRefs(accountStore.publicKey, userRefs, props.replyToNote?.noteId);
     saveNoteDraftMediaTags(accountStore.publicKey, unwrap(mediaTags));
-  });
-
-  createEffect(() => {
-    if (
-      [pollState.question, ...pollState.options.map(o => o.label)].every(t => t.length === 0)
-    ) return;
-
-    // save draft just in case there is an unintended interuption
-    savePollDraft(accountStore.publicKey, unwrap(pollState), props.replyToNote?.noteId);
-    savePollDraftUserRefs(accountStore.publicKey, userRefs, props.replyToNote?.noteId);
-    savePollDraftMediaTags(accountStore.publicKey, unwrap(mediaTags));
   });
 
   const onEscape = (e: KeyboardEvent) => {
@@ -755,44 +717,20 @@ const EditBox: Component<{
     props.onClose && props.onClose();
   };
 
-  const clearEditorPoll = (dontClose?: boolean) => {
-
-    if (!dontClose) {
-      props.onClose && props.onClose();
-    }
-
-    setIsCreatingPoll(false);
-    setPollState(emptyPoll());
-
-  };
-
   const closeEditor = () => {
-    if (message().trim().length > 0) {
-      setConfirmEditorClose(true);
-      return;
-    }
+    if (
+      (isCreatingPoll() && pollState.question.trim().length > 0) ||
+      message().trim().length > 0
+    ) {
+        setConfirmEditorClose(true);
+        return;
+      }
 
     saveNoteDraft(accountStore.publicKey, '', props.replyToNote?.noteId);
     saveNoteDraftUserRefs(accountStore.publicKey, {}, props.replyToNote?.noteId);
     saveNoteDraftMediaTags(accountStore.publicKey, []);
 
     clearEditor();
-  };
-
-  const closeEditorPoll = () => {
-    if (
-      isCreatingPoll() &&
-      [pollState.question, ...pollState.options.map(o => o.label)].some(t => t.length > 0)
-    ) {
-      setConfirmEditorClose(true);
-      return;
-    }
-
-    savePollDraft(accountStore.publicKey, emptyPoll(), props.replyToNote?.noteId);
-    savePollDraftUserRefs(accountStore.publicKey, {}, props.replyToNote?.noteId);
-    savePollDraftMediaTags(accountStore.publicKey, []);
-
-    clearEditorPoll();
   };
 
   const closeEmojiAndMentions = () => {
@@ -806,12 +744,6 @@ const EditBox: Component<{
     saveNoteDraft(accountStore.publicKey, note, props.replyToNote?.noteId);
     saveNoteDraftUserRefs(accountStore.publicKey, userRefs, props.replyToNote?.noteId);
     saveNoteDraftMediaTags(accountStore.publicKey, unwrap(mediaTags));
-  };
-
-  const persistPoll = (poll: PollState) => {
-    savePollDraft(accountStore.publicKey, poll, props.replyToNote?.noteId);
-    savePollDraftUserRefs(accountStore.publicKey, userRefs, props.replyToNote?.noteId);
-    savePollDraftMediaTags(accountStore.publicKey, unwrap(mediaTags));
   };
 
   const [isPostingInProgress, setIsPostingInProgress] = createSignal(false);
@@ -1072,7 +1004,7 @@ const EditBox: Component<{
         toast?.sendSuccess(intl.formatMessage(tToast.publishPollSuccess));
         props.onSuccess && props.onSuccess({ success, reasons, note }, { noteRefs, userRefs, articleRefs, highlightRefs, relayHints });
         setIsPostingInProgress(false);
-        savePollDraft(accountStore.publicKey, emptyPoll(), rep?.noteId)
+        saveNoteDraft(accountStore.publicKey, '', rep?.noteId)
         clearEditor();
 
         return;
@@ -2360,6 +2292,23 @@ const EditBox: Component<{
     return pollState.focusedInput !== 'question' && !pollState.focusedInput.startsWith('choice');
   }
 
+  const moveToPoll = () => {
+    setIsCreatingPoll((v) => true);
+    if (textArea) {
+      setPollState('question', `${message()}`);
+      setMessage('');
+    }
+  }
+
+  const moveToNote = () => {
+    setMessage(pollState.question);
+    setTimeout(() => {
+      textArea!.value = message();
+    }, 0)
+    setIsCreatingPoll(false);
+    setPollState(emptyPoll());
+  }
+
   return (
     <div
       id={props.id}
@@ -2383,17 +2332,7 @@ const EditBox: Component<{
             <NewPoll
               pollState={pollState}
               setPollState={setPollState}
-              onRemovePoll={() => {
-                if (
-                  isCreatingPoll() &&
-                  [pollState.question, ...pollState.options.map(o => o.label)].some(t => t.length > 0)
-                ) {
-                  setConfirmEditorRemovePoll(true);
-                  return;
-                }
-                setIsCreatingPoll(false);
-                setPollState(emptyPoll());
-              }}
+              onRemovePoll={moveToNote}
             />
           </div>
         </Match>
@@ -2550,26 +2489,14 @@ const EditBox: Component<{
         abortLabel={intl.formatMessage(tNote.saveNoteDraft.optionNo)}
         cancelLabel={intl.formatMessage(tNote.saveNoteDraft.optionCancel)}
         onConfirm={() => {
-          if (isCreatingPoll()) {
-            persistPoll(unwrap(pollState));
-            setPollState(emptyPoll());
-            setConfirmEditorClose(false);
+          const text = isCreatingPoll() ? pollState.question : message();
 
-            props.onClose && props.onClose();
-
-            return;
-          }
-
-          persistNote(message());
+          persistNote(text);
           setConfirmEditorClose(false);
           clearEditor();
         }}
         onAbort={() => {
-          if (isCreatingPoll()) {
-            persistPoll(emptyPoll());
-          } else {
-            persistNote('');
-          }
+          persistNote('');
           setConfirmEditorClose(false);
           clearEditor();
         }}
@@ -2581,56 +2508,6 @@ const EditBox: Component<{
           } else {
             textArea?.focus();
           }
-        }}
-      />
-
-      <ConfirmAlternativeModal
-        open={isConfirmEditorToPoll()}
-        title={intl.formatMessage(tNote.confirmSwitchToPoll.title)}
-        description={intl.formatMessage(tNote.confirmSwitchToPoll.description)}
-        confirmLabel={intl.formatMessage(tNote.confirmSwitchToPoll.optionYes)}
-        abortLabel={intl.formatMessage(tNote.confirmSwitchToPoll.optionNo)}
-        cancelLabel={intl.formatMessage(tNote.confirmSwitchToPoll.optionCancel)}
-        onConfirm={() => {
-          persistNote(message());
-          clearEditor(true);
-          setIsCreatingPoll(true);
-          setConfirmEditorToPoll(false);
-        }}
-        onAbort={() => {
-          persistNote('');
-          clearEditor(true);
-          setIsCreatingPoll(true);
-          setConfirmEditorToPoll(false);
-        }}
-        onCancel={() => {
-          setConfirmEditorToPoll(false);
-          textArea?.focus();
-        }}
-      />
-
-      <ConfirmAlternativeModal
-        open={isConfirmEditorRemovePoll()}
-        title={intl.formatMessage(tNote.confirmRemovePoll.title)}
-        description={intl.formatMessage(tNote.confirmRemovePoll.description)}
-        confirmLabel={intl.formatMessage(tNote.confirmRemovePoll.optionYes)}
-        abortLabel={intl.formatMessage(tNote.confirmRemovePoll.optionNo)}
-        cancelLabel={intl.formatMessage(tNote.confirmRemovePoll.optionCancel)}
-        onConfirm={() => {
-          persistPoll(unwrap(pollState));
-          setPollState(emptyPoll());
-          setIsCreatingPoll(false);
-          setConfirmEditorRemovePoll(false);
-        }}
-        onAbort={() => {
-          persistPoll(emptyPoll());
-          setIsCreatingPoll(false);
-          setConfirmEditorRemovePoll(false);
-        }}
-        onCancel={() => {
-          setConfirmEditorRemovePoll(false);
-          const input = document.documentElement.querySelector("[data-input-id=question]") as HTMLTextAreaElement | undefined;
-          input?.focus();
         }}
       />
 
@@ -2656,14 +2533,7 @@ const EditBox: Component<{
           <div class={styles.editorOption}>
             <ButtonGhost
               disabled={isCreatingPoll()}
-              onClick={() => {
-                if (message().length > 0) {
-                  setConfirmEditorToPoll(true);
-                  return;
-                }
-                setIsCreatingPoll((v) => !v);
-                !isCreatingPoll() && textArea?.focus();
-              }}>
+              onClick={moveToPoll}>
               <div
                 ref={pollButton}
                 class={`poll_icon ${styles.pollIcon} ${isCreatingPoll() ? styles.highlight : ''}`}
@@ -2703,7 +2573,7 @@ const EditBox: Component<{
           >
             {intl.formatMessage(tActions.notePostNew)}
           </ButtonPrimary>
-          <ButtonSecondary onClick={isCreatingPoll() ? closeEditorPoll : closeEditor}>
+          <ButtonSecondary onClick={closeEditor}>
             {intl.formatMessage(tActions.cancel)}
           </ButtonSecondary>
         </div>
