@@ -122,6 +122,11 @@ export type NoteVideoContextMenuInfo = {
   position: DOMRect | undefined,
   onDownload?: () => void,
 };
+export type PollVoteModalConfig = {
+  didVote: boolean,
+  votedFor: string,
+  votedSats: number,
+};
 
 export type AppContextStore = {
   events: Record<number, NostrEventContent[]>,
@@ -130,6 +135,7 @@ export type AppContextStore = {
   showReactionsModal: string | undefined,
   reactionStats: ReactionStats,
   showVotesModal: PrimalUserPoll | undefined,
+  votesModalConfig: PollVoteModalConfig | undefined,
   showCustomZapModal: boolean,
   showZapVoteModal: boolean,
   customZap: CustomZapInfo | undefined,
@@ -162,7 +168,7 @@ export type AppContextStore = {
   actions: {
     openReactionModal: (noteId: string, stats: ReactionStats) => void,
     closeReactionModal: () => void,
-    openVotesModal: (poll: PrimalUserPoll) => void,
+    openVotesModal: (poll: PrimalUserPoll, config: PollVoteModalConfig) => void,
     closeVotesModal: () => void,
     openCustomZapModal: (custonZapInfo: CustomZapInfo) => void,
     closeCustomZapModal: () => void,
@@ -239,6 +245,7 @@ const initialData: Omit<AppContextStore, 'actions'> = {
     openOn: 'default',
   },
   showVotesModal: undefined,
+  votesModalConfig: undefined,
   showCustomZapModal: false,
   customZap: undefined,
   showZapVoteModal: false,
@@ -304,12 +311,15 @@ export const AppProvider = (props: { children: JSXElement }) => {
   };
 
 
-  const openVotesModal = (poll: PrimalUserPoll) => {
+  const openVotesModal = (poll: PrimalUserPoll, config: PollVoteModalConfig) => {
+    updateStore('votesModalConfig', () => ({...config}));
     updateStore('showVotesModal', () => ({...poll}));
   };
 
   const closeVotesModal = () => {
     updateStore('showVotesModal', () => undefined);
+    updateStore('votesModalConfig', () => undefined);
+
   };
 
   const openCustomZapModal = (customZapInfo: CustomZapInfo) => {

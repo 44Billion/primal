@@ -71,9 +71,6 @@ const ZapPoll: Component<UserPollProps> = (props) => {
   const [votedSats, setVotedSats] = createSignal(props.poll.zapLimits?.min || 0);
 
   const doVote = async (choice: PrimalPollChoice) => {
-
-    console.log('POLL: ', props.poll)
-
     app?.actions.openVoteZapModal({
       poll: props.poll,
       choice,
@@ -144,7 +141,7 @@ const ZapPoll: Component<UserPollProps> = (props) => {
 
   const choicePercent = (id: string) => {
     const results = props.poll.results?.[id];
-    if (!results) return didVote() && votedFor() === id ? votedSats() : 0;
+    if (!results) return didVote() && votedFor() === id ? 100 : 0;
     const votes = (results.satszapped || 0) + (didVote()&& votedFor() === id ? votedSats() : 0);
     const total = totalSats();
 
@@ -177,7 +174,11 @@ const ZapPoll: Component<UserPollProps> = (props) => {
   const showVoteDetails = (e: MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    app?.actions.openVotesModal(props.poll);
+    app?.actions.openVotesModal(props.poll, {
+      didVote: didVote(),
+      votedFor: votedFor(),
+      votedSats: votedSats(),
+    });
   }
 
   onMount(() => {

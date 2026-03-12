@@ -5,7 +5,7 @@ import { Component, createEffect, createSignal, For, Match, on, Show, Switch } f
 import { createStore } from 'solid-js/store';
 import { APP_ID } from '../../App';
 import { Kind, urlRegexG } from '../../constants';
-import { ReactionStats, useAppContext } from '../../contexts/AppContext';
+import { PollVoteModalConfig, ReactionStats, useAppContext } from '../../contexts/AppContext';
 import { hookForDev } from '../../lib/devTools';
 import { hexToNpub } from '../../lib/keys';
 import {
@@ -32,6 +32,7 @@ import {
   NostrStatsContent,
   NostrUserContent,
   NoteActions,
+  PollResults,
   PrimalNote,
   PrimalUserPoll,
 } from '../../types/primal';
@@ -55,6 +56,7 @@ import { dateFuture } from '../../lib/dates';
 const VotesModal: Component<{
   id?: string,
   poll: PrimalUserPoll | undefined,
+  config: PollVoteModalConfig | undefined,
   onClose?: () => void,
 }> = (props) => {
 
@@ -127,7 +129,17 @@ const VotesModal: Component<{
       return;
     }
 
-    const choice = poll.choices.find(c => (poll.results[c.id]?.votes || 0) > 0);
+    const choice = poll.choices.find(c => {
+      let votes = 0;
+      let results = poll.results?.[c.id];
+      if (results) {
+        votes = results.votes || 0;
+      }
+      else if (c.id === props.config?.votedFor) {
+        votes = props.config?.didVote ? 1 : 0;
+      }
+      return votes > 0;
+    });
 
     setSelectedChoice(choice?.id || '');
   }));
@@ -138,9 +150,29 @@ const VotesModal: Component<{
     fetchVotes(props.poll.id, id);
   }));
 
+  const pollResults = () => {
+    const poll = props.poll;
+    if (!poll) return undefined;
+
+    let results = poll.results
+    if (!results) {
+      results = poll.choices.reduce<PollResults>((acc, choice) => {
+        return ({
+        ...acc,
+        [choice.id]: {
+          votes: props.config?.didVote && props.config?.votedFor === choice.id ? 1 : 0,
+          satszapped: props.config?.didVote && props.config?.votedFor === choice.id ? (props.config?.votedSats || 0) : 0,
+        }
+      })}, {})
+    }
+
+    return results;
+  }
+
   const totalVotes = () => {
-    const results = props.poll?.results
+    const results = pollResults();
     if (!results) return 0;
+
     const choices = Object.keys(results);
 
     return choices.reduce<number>((acc, id) => {
@@ -149,18 +181,18 @@ const VotesModal: Component<{
   }
 
   const choicePercent = (id: string) => {
-    const results = props.poll?.results?.[id];
-    if (!results) return 0;
-    const votes = results.votes || 0;
+    const results = pollResults();
+
+    const votes = results?.[id]?.votes || 0;
     const total = totalVotes();
 
     return ((votes/total)*100).toFixed(1);
   }
 
   const choiceZaps = (id: string) => {
-    const results = props.poll?.results?.[id];
-    if (!results) return 0;
-    return results.satszapped || 0;
+    const results = pollResults();
+
+    return results?.[id]?.satszapped || 0;
   }
 
   const isExpiring = () => {
@@ -191,7 +223,7 @@ const VotesModal: Component<{
               <button
                 class={`${styles.voteChoice} ${selectedChoice() === choice.id ? styles.highlight : ''}`}
                 onClick={() => setSelectedChoice(choice.id)}
-                disabled={(props.poll?.results[choice.id]?.votes || 0) < 1}
+                disabled={(pollResults()?.[choice.id]?.votes || 0) < 1}
               >
                 <div class={styles.option}>
                   <div
@@ -244,7 +276,7 @@ const VotesModal: Component<{
             {(props.poll?.choices || []).find(c => c.id === selectedChoice())?.label}
           </div>
           <div class={styles.selectedVotes}>
-            {humanizeNumber(props.poll?.results[selectedChoice()]?.votes || 0)} votes
+            {humanizeNumber(pollResults()?.[selectedChoice()]?.votes || 0)} votes
           </div>
         </div>
 

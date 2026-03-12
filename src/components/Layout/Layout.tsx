@@ -141,6 +141,7 @@ const Layout: Component<any> = (props) => {
 
         <VotesModal
           poll={app?.showVotesModal}
+          config={app?.votesModalConfig}
           onClose={() => app?.actions.closeVotesModal()}
         />
 

@@ -122,7 +122,11 @@ const UserPoll: Component<UserPollProps> = (props) => {
   const showVoteDetails = (e: MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    app?.actions.openVotesModal(props.poll);
+    app?.actions.openVotesModal(props.poll, {
+      didVote: didVote(),
+      votedFor: votedFor(),
+      votedSats: 0,
+    });
   }
 
   onMount(() => {
