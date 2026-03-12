@@ -10,6 +10,7 @@ import {
   PrimalArticle,
   PrimalNote,
   PrimalUser,
+  PrimalUserPoll,
 } from '../types/primal';
 import { Kind } from "../constants";
 import { APP_ID } from "../App";
@@ -22,12 +23,14 @@ import { npubToHex } from "../lib/keys";
 import {
   emptyPaging,
   fetchMegaFeed,
+  fetchMegaMultiFeed,
+  filterAndSortEvents,
   filterAndSortNotes,
   filterAndSortReads,
   PaginationInfo,
 } from "../megaFeeds";
 import { logError } from "../lib/logger";
-import { calculateNotesOffset, calculateReadsOffset } from "../utils";
+import { calculateEventsOffset, calculateNotesOffset, calculateReadsOffset } from "../utils";
 import { accountStore } from "../stores/accountStore";
 
 const recomendedUsers = [
@@ -49,7 +52,7 @@ export type AdvancedSearchContextStore = {
   scores: Record<string, number>,
   contentUsers: PrimalUser[],
   contentScores: Record<string, number>,
-  notes: PrimalNote[],
+  notes: (PrimalNote | PrimalUserPoll)[],
   reads: PrimalArticle[],
   isFetchingUsers: boolean,
   isFetchingContent: boolean,
@@ -308,13 +311,14 @@ export function AdvancedSearchProvider(props: { children: JSX.Element }) {
       if (kind === 'reads') {
         offset = calculateReadsOffset(store.reads, store.paging);
       } else if (kind === 'notes') {
-        offset = calculateNotesOffset(store.notes, store.paging);
+        offset = calculateEventsOffset(store.notes, store.paging);
       }
 
-      const { notes, reads, paging } = await fetchMegaFeed(
+      const { notes, reads, userPolls, zapPolls, paging } = await fetchMegaMultiFeed(
         accountStore.publicKey,
         spec,
         `adv_search_${APP_ID}`,
+        [Kind.Text, Kind.LongForm, Kind.UserPoll, Kind.ZapPoll],
         {
           limit: 20,
           until,
@@ -322,12 +326,12 @@ export function AdvancedSearchProvider(props: { children: JSX.Element }) {
         }
       );
 
-      const sortedNotes = filterAndSortNotes(notes, paging);
+      const sortedNotes = filterAndSortEvents([...notes, ...userPolls, ...zapPolls], paging);
       const sortedReads = filterAndSortReads(reads, paging);
 
       updateStore('paging', () => ({ ...paging }));
       updateStore('reads', (ns) => [ ...ns, ...sortedReads]);
-      updateStore('notes', (ns) => [ ...ns, ...sortedNotes]);
+      updateStore('notes', (ns) => [ ...ns, ...(sortedNotes as (PrimalNote | PrimalUserPoll)[])]);
 
     } catch (e) {
       logError('ERROR fetching search results: ', e);

@@ -589,15 +589,39 @@ const ProfileTabs: Component<{
                     <div>
                       <For each={profile?.replies}>
                         {reply => (
-                          <div class="animated">
-                            <Note
-                              note={reply}
-                              shorten={true}
-                              onRemove={(id: string) => {
-                                profile?.actions.removeEvent(id, 'replies');
-                              }}
-                            />
-                          </div>
+                          <Switch>
+                            <Match when={reply.msg.kind === Kind.Text}>
+                              <div class="animated">
+                              <Note
+                                note={reply}
+                                shorten={true}
+                                onRemove={(id: string) => {
+                                  profile?.actions.removeEvent(id, 'replies');
+                                }}
+                              />
+                              </div>
+                            </Match>
+                            <Match when={reply.msg.kind === Kind.UserPoll}>
+                              <div class="animated">
+                                <UserPoll
+                                  poll={reply}
+                                  onRemove={(id: string) => {
+                                    profile?.actions.removeEvent(id, 'notes');
+                                  }}
+                                />
+                              </div>
+                            </Match>
+                            <Match when={reply.msg.kind === Kind.ZapPoll}>
+                              <div class="animated">
+                                <ZapPoll
+                                  poll={reply}
+                                  onRemove={(id: string) => {
+                                    profile?.actions.removeEvent(id, 'notes');
+                                  }}
+                                />
+                              </div>
+                            </Match>
+                          </Switch>
                         )}
                       </For>
                       <Paginator

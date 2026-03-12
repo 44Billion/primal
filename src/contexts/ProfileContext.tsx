@@ -73,7 +73,7 @@ export type ProfileContextStore = {
   articles: PrimalArticle[],
   drafts: PrimalDraft[],
   notes: (PrimalNote | PrimalUserPoll)[],
-  replies: PrimalNote[],
+  replies: (PrimalNote | PrimalUserPoll)[],
   zaps: PrimalZap[],
   zappedNotes: PrimalNote[],
   zappedArticles: PrimalArticle[],
@@ -332,21 +332,22 @@ export const ProfileProvider = (props: { children: ContextChildren }) => {
 
       updateStore('isFetchingReplies', () => true);
 
-      const { notes, paging } = await fetchMegaFeed(
+      const { notes, userPolls, zapPolls, paging } = await fetchMegaMultiFeed(
         accountStore.publicKey,
         JSON.stringify(specification),
         `profile_replies_${APP_ID}`,
+        [Kind.Text, Kind.Repost, Kind.UserPoll, Kind.ZapPoll],
         {
           limit,
           until,
-          offset: offset || store.replies.map(n => n.repost ? n.repost.note.created_at : (n.post.created_at || 0)),
+          offset: offset || store.replies.map(n => n.repost ? n.repost.note.created_at : (n.msg.created_at || 0)),
         },
       );
 
-      const sortedNotes = filterAndSortNotes(notes, paging);
+      const sortedEvents = filterAndSortEvents([...notes, ...userPolls, ...zapPolls], paging);
 
       updateStore('paging', 'replies', () => ({ ...paging }));
-      updateStore('replies', (ns) => [ ...ns, ...sortedNotes]);
+      updateStore('replies', (ns) => [ ...ns, ...(sortedEvents as (PrimalNote | PrimalUserPoll)[])]);
       updateStore('isFetchingReplies', () => false);
       return;
     }

@@ -15,6 +15,8 @@ import { setAdvSearchState } from './AdvancedSearch';
 import AdvancedSearchCommadTextField from '../components/AdvancedSearch/AdvancedSearchCommadTextField';
 import { isPhone } from '../utils';
 import { accountStore } from '../stores/accountStore';
+import UserPoll from '../components/UserPoll/UserPoll';
+import ZapPoll from '../components/UserPoll/ZapPoll';
 
 
 const AdvancedSearchResults: Component = () => {
@@ -47,7 +49,7 @@ const AdvancedSearchResults: Component = () => {
 
     if (isRead) return Kind.LongForm;
 
-    return 1;
+    return Kind.Text;
   }
 
   createEffect(on(() => params.query, (v, p) => {
@@ -119,13 +121,39 @@ const AdvancedSearchResults: Component = () => {
           </Match>
           <Match when={[Kind.Text].includes(kind())}>
             <For each={search?.notes} >
-              {note => <Note
-                note={note}
-                shorten={true}
-                onRemove={(id: string) => {
-                  search?.actions.removeEvent(id, 'notes');
-                }}
-              />}
+              {note =>
+                <Switch>
+                  <Match when={note.msg.kind === Kind.Text}>
+                    <Note
+                      note={note}
+                      shorten={true}
+                      onRemove={(id: string) => {
+                        search?.actions.removeEvent(id, 'notes');
+                      }}
+                    />
+                  </Match>
+                  <Match when={note.msg.kind === Kind.UserPoll}>
+                    <div class="animated">
+                      <UserPoll
+                        poll={note}
+                        onRemove={(id: string) => {
+                          search?.actions.removeEvent(id, 'notes');
+                        }}
+                      />
+                    </div>
+                  </Match>
+                  <Match when={note.msg.kind === Kind.ZapPoll}>
+                    <div class="animated">
+                      <ZapPoll
+                        poll={note}
+                        onRemove={(id: string) => {
+                          search?.actions.removeEvent(id, 'notes');
+                        }}
+                      />
+                    </div>
+                  </Match>
+                </Switch>
+              }
             </For>
           </Match>
           <Match when={!search?.isFetchingContent && (search?.notes.length === 0 || search?.reads.length === 0)}>
