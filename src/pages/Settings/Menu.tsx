@@ -91,21 +91,27 @@ const Menu: Component = () => {
         </Show>
       </div>
 
-      <Show when={accountStore.publicKey && !['none', 'guest'].includes(accountStore.loginType)}>
-        <div class={styles.webVersion}>
-          <ButtonPrimary onClick={() => {
-            logout();
-            navigate('/home');
-          }}>
-            {intl.formatMessage(tActions.logout)}
-          </ButtonPrimary>
-        </div>
-      </Show>
+      <div class={styles.settingsMenuFooter}>
+        <Show
+          when={accountStore.publicKey && !['none', 'guest'].includes(accountStore.loginType)}
+          fallback={<div></div>}
+        >
+          <div class={styles.webVersion}>
+            <ButtonPrimary onClick={() => {
+              logout();
+              navigate('/home');
+            }}>
+              {intl.formatMessage(tActions.logout)}
+            </ButtonPrimary>
+          </div>
+        </Show>
 
-      <div class={styles.webVersion}>
-        <div class={styles.title}>version</div>
-        <div class={styles.value}>{version}</div>
+        <div class={styles.webVersion}>
+          <div class={styles.title}>Version</div>
+          <div class={styles.value}>{version}</div>
+        </div>
       </div>
+
     </div>
   )
 }
