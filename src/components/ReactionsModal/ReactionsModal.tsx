@@ -208,6 +208,7 @@ const ReactionsModal: Component<{
           if (!zapTag) return;
 
           const zapInfo = JSON.parse(zapTag[1] || '{}');
+          if (zapInfo.tags.find(t => t[0] === 'poll_option')) return;
 
           let amount = '0';
 
@@ -222,6 +223,7 @@ const ReactionsModal: Component<{
               amount = amountTag ? amountTag[1] : '0';
             }
           }
+
 
           zaps.push({
             amount,
