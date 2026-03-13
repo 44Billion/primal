@@ -106,7 +106,7 @@ const Note: Component<NoteProps> = (props) => {
     hideZapIcon: false,
     moreZapsAvailable: false,
     isRepostMenuVisible: false,
-    topZaps: [],
+    topZaps: props.note.topZaps || [],
     topZapsFeed: [],
     quoteCount: props.quoteCount || 0,
   });
@@ -394,7 +394,7 @@ const Note: Component<NoteProps> = (props) => {
 
             <div class={styles.topZaps}>
               <NoteTopZaps
-                topZaps={reactionsState.topZaps}
+                topZaps={reactionsState.topZapsFeed}
                 zapCount={reactionsState.zapCount}
                 action={() => openReactionModal('zaps')}
                 // doZap={() => app?.actions.openCustomZapModal(customZapInfo())}
