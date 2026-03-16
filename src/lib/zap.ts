@@ -10,6 +10,7 @@ import { StreamingData } from "./streaming";
 import { relayWorker } from "../App";
 import { NostrEvent, NostrEventTemplate } from "./nTools";
 import { accountStore } from "../stores/accountStore";
+import { unwrap } from "solid-js/store";
 
 export let lastZapError: string = "";
 
@@ -510,11 +511,17 @@ export const zapVote = async (
 
   const sats = Math.round(amount * 1000);
 
+  let relays = poll.tags.filter(t => t[0] === 'relay').map((t) => t[1]);
+
+  if (relays.length === 0){
+    relays = unwrap(accountStore.activeRelays);
+  }
+
   let payload = {
     pubkey: receiverPubkey,
     event: poll.msg,
     amount: sats,
-    relays: [...accountStore.activeRelays],
+    relays: [ ...relays ],
   };
 
   if (comment.length > 0) {
