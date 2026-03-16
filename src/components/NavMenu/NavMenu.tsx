@@ -110,7 +110,12 @@ const NavMenu: Component< { id?: string } > = (props) => {
           }
         </For>
       </nav>
-      <Show when={hasPublicKey() && !loc.pathname.startsWith('/messages') && !loc.pathname.startsWith('/premium')}>
+      <Show when={
+        hasPublicKey() &&
+        !loc.pathname.startsWith('/messages') &&
+        !loc.pathname.startsWith('/premium') &&
+        !loc.pathname.startsWith('/settings')
+      }>
         <div class={styles.callToAction}>
           <Switch
             fallback={
