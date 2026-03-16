@@ -514,7 +514,7 @@ export const zapVote = async (
     pubkey: receiverPubkey,
     event: poll.msg,
     amount: sats,
-    relays: [relay],
+    relays: [...accountStore.activeRelays],
   };
 
   if (comment.length > 0) {
