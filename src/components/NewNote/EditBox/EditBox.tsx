@@ -997,7 +997,7 @@ const EditBox: Component<{
         pollState.pollKind,
         tags,
         createdAt,
-        true,
+        props.replyToNote !== undefined,
       );
 
       if (success && note) {
@@ -1236,6 +1236,7 @@ const EditBox: Component<{
       const { success, reasons, note } = await sendNote(
         messageToSend,
         tags,
+        props.replyToNote !== undefined,
       );
 
       if (success && note) {
