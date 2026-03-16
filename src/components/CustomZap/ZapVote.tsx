@@ -5,7 +5,7 @@ import { useSettingsContext } from '../../contexts/SettingsContext';
 import { hookForDev } from '../../lib/devTools';
 import { zapArticle, zapDVM, zapNote, zapProfile, zapStream, zapVote } from '../../lib/zap';
 import { userName } from '../../stores/profile';
-import { toastZapFail, zapCustomOption, actions as tActions, placeholders as tPlaceholders, zapCustomAmount } from '../../translations';
+import { toastZapFail, zapCustomOption, actions as tActions, placeholders as tPlaceholders, zapCustomAmount, messages } from '../../translations';
 import { PrimalDVM, PrimalNote, PrimalUser, PrimalUserPoll, ZapOption } from '../../types/primal';
 import AdvancedSearchDialog from '../AdvancedSearch/AdvancedSearchDialog';
 import ButtonPrimary from '../Buttons/ButtonPrimary';
@@ -71,8 +71,8 @@ const ZapVote: Component<{
   }
 
   const isSelected = (value: ZapOption) => {
-    const sel = selectedValue();
-    return value.amount === sel.amount;
+    const sel = customAmount().length > 0 ? parseInt(customAmount()) : selectedValue().amount;
+    return value.amount === sel;
   };
 
   const updateCustomAmount = (value: string) => {
@@ -145,7 +145,6 @@ const ZapVote: Component<{
     }
 
 
-    props.config?.onConfirm(selectedValue());
 
     const poll = props.config?.poll;
     const choice = props.config?.choice;
@@ -160,6 +159,10 @@ const ZapVote: Component<{
       cAmount :
       selectedValue().amount || min;
 
+    const option = { amount, message: comment()};
+
+    props.config?.onConfirm(option);
+
     const success = await zapVote(
       poll,
       accountStore.publicKey,
@@ -169,12 +172,12 @@ const ZapVote: Component<{
       unwrap(accountStore.activeNWC),
     );
 
-    handleZap(success);
+    handleZap(option, success);
   };
 
-  const handleZap = (success = true) => {
+  const handleZap = (option: ZapOption, success = true) => {
     if (success) {
-      props.config?.onSuccess(selectedValue());
+      props.config?.onSuccess(option);
       return;
     }
 
@@ -182,7 +185,7 @@ const ZapVote: Component<{
       intl.formatMessage(toastZapFail),
     );
 
-    props.config?.onFail(selectedValue());
+    props.config?.onFail(option);
   };
 
   let md = false;
