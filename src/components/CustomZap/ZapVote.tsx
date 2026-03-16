@@ -20,6 +20,7 @@ import { accountStore, hasPublicKey, setShowPin, showGetStarted, showMissingNWC 
 import { VoteZapInfo } from '../../contexts/AppContext';
 import { sendUserPollVote } from '../../lib/notes';
 import { humanizeNumber } from '../../lib/stats';
+import { unwrap } from 'solid-js/store';
 
 const ZapVote: Component<{
   id?: string,
@@ -165,7 +166,7 @@ const ZapVote: Component<{
       amount,
       choice.id,
       comment(),
-      accountStore.activeNWC,
+      unwrap(accountStore.activeNWC),
     );
 
     handleZap(success);
