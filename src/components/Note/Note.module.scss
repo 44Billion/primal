@@ -87,6 +87,14 @@
       line-height: 32px;
     }
 
+    a {
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden;
+      max-width: 100%;
+      display: inline-block;
+    }
+
   }
 
   .replyingTo {
@@ -220,6 +228,14 @@
           font-weight: 400;
           line-height: 32px;
         }
+
+        a {
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          overflow: hidden;
+          max-width: 100%;
+          display: inline-block;
+        }
       }
 
       .replyingTo {
@@ -348,6 +364,14 @@
           font-size: 24px;
           font-weight: 400;
           line-height: 32px;
+        }
+
+        a {
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          overflow: hidden;
+          max-width: 100%;
+          display: inline-block;
         }
       }
 
@@ -577,6 +601,15 @@
       width: 100%;
       margin-bottom: 12px;
       padding-inline: 20px;
+
+
+      a {
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        overflow: hidden;
+        max-width: 100%;
+        display: inline-block;
+      }
 
       a:hover {
         text-decoration: underline;
@@ -1074,6 +1107,13 @@
         line-height: 24px;
         width: 100%;
 
+        a {
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          overflow: hidden;
+          max-width: 100%;
+          display: inline-block;
+        }
         a:hover {
           text-decoration: underline;
         }

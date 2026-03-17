@@ -1141,12 +1141,12 @@ const ParsedNote: Component<{
     </For>
   };
 
-  const renderLinks = (item: NoteContent, index?: number) => {
+  const renderLinks = (item: NoteContent, index: number, length: number) => {
     return <For each={item.tokens}>
       {(token) => {
         if (isNoteTooLong()) return;
 
-        if (item.meta && item.meta.preview && (props.shorten ? totalLinks < 2 : true)) {
+        if (index === length - 1 && item.meta && item.meta.preview && (props.shorten ? totalLinks < 2 : true)) {
           setWordsDisplayed(w => w + shortMentionInWords);
           return (
             <LinkPreview
@@ -2043,10 +2043,10 @@ const ParsedNote: Component<{
     </For>
   }
 
-  const renderContent = (item: NoteContent, index: number) => {
+  const renderContent = (item: NoteContent, index: number, length: number) => {
 
 
-    const renderers: Record<string, (item: NoteContent, index?: number) => JSXElement> = {
+    const renderers: Record<string, (item: NoteContent, index: number, length: number) => JSXElement> = {
       linebreak: renderLinebreak,
       text: renderText,
       image: renderImage,
@@ -2074,7 +2074,7 @@ const ParsedNote: Component<{
     }
 
     return renderers[item.type] ?
-      renderers[item.type](item, index) :
+      renderers[item.type](item, index, length) :
       <></>;
   };
 
@@ -2085,7 +2085,7 @@ const ParsedNote: Component<{
   return (
     <div ref={thisNote} id={id()} class={`${styles.parsedNote} ${props.veryShort ? styles.shortNote : ''}`} >
       <For each={content}>
-        {(item, index) => renderContent(item, index())}
+        {(item, index) => renderContent(item, index(), content.length)}
       </For>
       <Show when={isNoteTooLong() || noteContent().length < (props.note.content?.length || 0)}>
         <span class={styles.more}>
