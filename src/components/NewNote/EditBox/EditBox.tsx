@@ -2532,18 +2532,16 @@ const EditBox: Component<{
             >
             </label>
           </div>
-          <Show when={false}>
-            <div class={styles.editorOption}>
-              <ButtonGhost
-                disabled={isCreatingPoll()}
-                onClick={moveToPoll}>
-                <div
-                  ref={pollButton}
-                  class={`poll_icon ${styles.pollIcon} ${isCreatingPoll() ? styles.highlight : ''}`}
-                ></div>
-              </ButtonGhost>
-            </div>
-          </Show>
+          <div class={styles.editorOption}>
+            <ButtonGhost
+              disabled={isCreatingPoll()}
+              onClick={moveToPoll}>
+              <div
+                ref={pollButton}
+                class={`poll_icon ${styles.pollIcon} ${isCreatingPoll() ? styles.highlight : ''}`}
+              ></div>
+            </ButtonGhost>
+          </div>
           <div class={styles.editorOption}>
             <ButtonGhost
               disabled={isEmojiDisabled()}
