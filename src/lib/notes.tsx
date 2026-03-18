@@ -280,7 +280,11 @@ export const replaceLinkPreviews = async (text: string) => {
     const m = matched[i];
     const url = m.split('__LINK__')[1];
 
-    const preview = await addLinkPreviews(url);
+    let preview: any;
+
+    if (i === matched.length - 1 && text.endsWith(m)) {
+      preview = await addLinkPreviews(url);
+    }
 
     const hasMinimalPreviewData = preview && preview.url &&
       ((preview.description && preview.description.length > 0) || preview.image || preview.title);
