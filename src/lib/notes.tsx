@@ -645,7 +645,7 @@ export const sendDraft = async (
       ["summary", article.summary],
       ["image", article.image],
       ["d", identifier],
-      ['client', 'primal-web'],
+      ['client', 'Primal Web'],
       ...tags,
     ],
     created_at: time,
@@ -660,7 +660,7 @@ export const sendDraft = async (
     tags: [
       ['d', identifier],
       ['k', `${Kind.LongForm}`],
-      ['client', 'primal-web'],
+      ['client', 'Primal Web'],
       // ["e", "<anchor event event id>", "<relay-url>"],
       // ["a", "<anchor event address>", "<relay-url>"],
     ],

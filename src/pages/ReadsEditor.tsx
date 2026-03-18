@@ -354,7 +354,7 @@ const ReadsEditor: Component = () => {
 
     tags = [...tags, ...relayTags];
 
-    tags.push(['client', 'Primal']);
+    tags.push(['client', 'Primal Web']);
 
     let articleToPost = {
       ...article,

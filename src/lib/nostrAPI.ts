@@ -139,8 +139,16 @@ export const timeoutPromiseResolve = (timeout = 8_000) => {
   });
 }
 
-export const signEvent = async (event: NostrRelayEvent) => {
+export const signEvent = async (e: NostrRelayEvent) => {
+  let event = {...e};
   const tempId = event.id || `${uuidv4()}`;
+
+  const hastClientTag = event.tags.find(t => t[0] === 'client');
+
+  if (!hastClientTag) {
+    event.tags.push(['client', 'Primal Web']);
+  }
+
   try {
     return await enqueueNostr<NostrRelaySignedEvent>(async (nostr) => {
       try {
