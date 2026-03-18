@@ -105,7 +105,6 @@ const LayoutDesktop: Component<{
 
           <Show
             when={accountStore.isKeyLookupDone}
-            fallback={<div>LOOKING UP KEY</div>}
           >
             <Switch>
               <Match when={location.pathname.includes('/citadel_stream')}>

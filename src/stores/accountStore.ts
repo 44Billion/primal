@@ -10,6 +10,7 @@ import {
 import {
   getPublicKey,
   signEvent,
+  timeoutPromiseResolve,
 } from "../lib/nostrAPI";
 
 import { NostrEventContent,
@@ -2028,8 +2029,6 @@ export const initAccountStore: AccountStore = {
     updateAccountStore('isKeyLookupDone', false);
     updateAccountStore('isKeyLookupDone', true);
 
-    console.log('KEY LOOKUP: ', accountStore.isKeyLookupDone)
-
 // ===========================================
 
     updateAccountProfile(pubkey);
@@ -2145,7 +2144,7 @@ export const initAccountStore: AccountStore = {
         if (storedPk) {
           doAfterLogin(storedPk);
         }
-        loginUsingExtension();
+        loginUsingExtension(1, storedPk);
         break;
       case 'local':
         loginUsingLocalNsec();
@@ -2195,42 +2194,40 @@ export const initAccountStore: AccountStore = {
     updateAccountStore('isKeyLookupDone', () => true);
   };
 
-  export const loginUsingExtension = async (extensionAttempt = 0) => {
+  export const loginUsingExtension = async (extensionAttempt = 0, pk?: string) => {
     const win = window as NostrWindow;
     const nostr = win.nostr;
 
     updateAccountStore('isKeyLookupDone', () => false);
 
-    console.log('LOGIN USING EXETENSION: ', extensionAttempt, accountStore.isKeyLookupDone)
-
     if (!nostr) {
       if (extensionAttempt > 4) {
         logInfo('Nostr extension not found');
-        console.log('LUE NO NOSTR: ', extensionAttempt, accountStore.isKeyLookupDone)
-
         return;
       }
 
       logInfo('Nostr extension retry attempt: ', extensionAttempt)
-      console.log('LUE RETRY: ', extensionAttempt, accountStore.isKeyLookupDone)
       setTimeout(() => loginUsingExtension(extensionAttempt + 1), 250);
       return;
     }
 
     try {
       setLoginType('extension');
-      console.log('LUE GET KEY: ', extensionAttempt, accountStore.isKeyLookupDone)
-      const key = await getPublicKey();
-      console.log('LUE GOT KEY: ', extensionAttempt, accountStore.isKeyLookupDone, key)
+      let key = pk;
 
       if (key === undefined) {
-      console.log('LUE NO KEY: ', extensionAttempt, accountStore.isKeyLookupDone)
+        key = await Promise.race([
+          getPublicKey(),
+          timeoutPromiseResolve(3_000)
+        ]);
+      }
+
+      if (key === undefined) {
         setTimeout(() => {
           loginUsingExtension(extensionAttempt + 1);
         }, 250);
       }
       else {
-      console.log('LUE SET KEY: ', extensionAttempt, accountStore.isKeyLookupDone, key)
         setPublicKey(key);
 
         // Read profile from storage
@@ -2241,11 +2238,9 @@ export const initAccountStore: AccountStore = {
           updateAccountStore('activeUser', () => ({...storedUser}));
         }
 
-    console.log('LOGIN USING EXETENSION KEY: ', key)
         doAfterLogin(key);
       }
     } catch (e: any) {
-      console.log('LUE GUEST: ', extensionAttempt, accountStore.isKeyLookupDone)
       setLoginType('guest');
       setPublicKey(undefined);
       localStorage.removeItem('pubkey');
