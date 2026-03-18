@@ -2028,6 +2028,8 @@ export const initAccountStore: AccountStore = {
     updateAccountStore('isKeyLookupDone', false);
     updateAccountStore('isKeyLookupDone', true);
 
+    console.log('KEY LOOKUP: ', accountStore.isKeyLookupDone)
+
 // ===========================================
 
     updateAccountProfile(pubkey);
@@ -2199,6 +2201,8 @@ export const initAccountStore: AccountStore = {
 
     updateAccountStore('isKeyLookupDone', () => false);
 
+    console.log('LOGIN USING EXETENSION: ', accountStore.isKeyLookupDone)
+
     if (!nostr) {
       if (extensionAttempt > 4) {
         logInfo('Nostr extension not found');
@@ -2230,6 +2234,7 @@ export const initAccountStore: AccountStore = {
           updateAccountStore('activeUser', () => ({...storedUser}));
         }
 
+    console.log('LOGIN USING EXETENSION KEY: ', key)
         doAfterLogin(key);
       }
     } catch (e: any) {
