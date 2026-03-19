@@ -75,12 +75,15 @@ const VotesModal: Component<{
     const poll = props.poll;
     if (!poll || !poll.choices || poll.choices.length < 1) return;
 
+    setIsFetching(true);
+
     if (props.poll?.msg.kind === Kind.UserPoll) {
       const { pollVotes } = await getPollVotes(id, option, `poll_votes_${id}_${APP_ID}`, {
         limit: 20,
       });
 
       setVotes(pollVotes);
+      setIsFetching(false);
       return;
     }
 
@@ -90,6 +93,7 @@ const VotesModal: Component<{
       });
 
       setVotes(pollVotes);
+      setIsFetching(false);
       return;
     }
 
@@ -308,60 +312,118 @@ const VotesModal: Component<{
           </div>
         </div>
 
-        <div class={styles.voteList}>
-          <For each={votes}>
-            {vote => (
-              <div class={styles.voteDetails}>
-                <Show when={vote.amount}>
-                  <div class={styles.zappedAmount}>
-                    <div class={styles.zapIcon}></div>
-                    <div class={styles.amount}>
-                      {humanizeNumber(vote.amount || 0)}
+        <Switch>
+          <Match when={isFetching()}>
+            <div class={styles.voteList}>
+              <Loader />
+            </div>
+          </Match>
+          <Match when={props.poll?.msg.kind === Kind.ZapPoll}>
+            <div class={styles.voteListZaps}>
+              <For each={votes}>
+                {vote => (
+                  <>
+                    <div class={styles.zappedAmount}>
+                      <div class={styles.zapIcon}></div>
+                      <div class={styles.amount}>
+                        {(vote.amount || 0).toLocaleString()}
+                      </div>
+                    </div>
+                    <div class={styles.voteDetails}>
+                      <a
+                        href={app?.actions.profileLink(vote.user?.npub) || ''}
+                        onClick={() => props.onClose?.()}
+                      >
+                        <Avatar user={vote.user} size="vvs"></Avatar>
+                      </a>
+
+                      <div class={styles.postInfo}>
+                        <div class={styles.userInfo}>
+                          <span class={styles.userName}>
+                            {userName(vote.user)}
+                          </span>
+
+                          <VerificationCheck
+                            user={vote.user}
+                          />
+                        </div>
+                        <Switch>
+                          <Match when={vote.message && vote.message.length > 0}>
+                            <span
+                              class={styles.verification}
+                            >
+                              {vote.message}
+                            </span>
+                          </Match>
+                          <Match when={vote.user?.nip05}>
+                            <span
+                              class={styles.verification}
+                            >
+                              {nip05Verification(vote.user)}
+                            </span>
+                          </Match>
+                        </Switch>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </For>
+              <Paginator
+                loadNextPage={() => fetchVotesNextPage(props.poll?.id || '', selectedChoice())}
+                isSmall={true}
+              />
+            </div>
+          </Match>
+
+          <Match when={true}>
+            <div class={styles.voteList}>
+              <For each={votes}>
+                {vote => (
+                  <div class={styles.voteDetails}>
+                    <a
+                      href={app?.actions.profileLink(vote.user?.npub) || ''}
+                      onClick={() => props.onClose?.()}
+                    >
+                      <Avatar user={vote.user} size="vvs"></Avatar>
+                    </a>
+
+                    <div class={styles.postInfo}>
+                      <div class={styles.userInfo}>
+                        <span class={styles.userName}>
+                          {userName(vote.user)}
+                        </span>
+
+                        <VerificationCheck
+                          user={vote.user}
+                        />
+                      </div>
+                      <Switch>
+                        <Match when={vote.message && vote.message.length > 0}>
+                          <span
+                            class={styles.verification}
+                          >
+                            {vote.message}
+                          </span>
+                        </Match>
+                        <Match when={vote.user?.nip05}>
+                          <span
+                            class={styles.verification}
+                          >
+                            {nip05Verification(vote.user)}
+                          </span>
+                        </Match>
+                      </Switch>
                     </div>
                   </div>
-                </Show>
-                <a
-                  href={app?.actions.profileLink(vote.user?.npub) || ''}
-                  onClick={() => props.onClose?.()}
-                >
-                  <Avatar user={vote.user} size="vvs"></Avatar>
-                </a>
-
-                <div class={styles.postInfo}>
-                  <div class={styles.userInfo}>
-                    <span class={styles.userName}>
-                      {userName(vote.user)}
-                    </span>
-
-                    <VerificationCheck
-                      user={vote.user}
-                    />
-                  </div>
-                  <Switch>
-                    <Match when={vote.message && vote.message.length > 0}>
-                      <span
-                        class={styles.verification}
-                      >
-                        {vote.message}
-                      </span>
-                    </Match>
-                    <Match when={vote.user?.nip05}>
-                      <span
-                        class={styles.verification}
-                      >
-                        {nip05Verification(vote.user)}
-                      </span>
-                    </Match>
-                  </Switch>
-                </div>
-              </div>
-            )}
-          </For>
-          <Paginator
-            loadNextPage={() => fetchVotesNextPage(props.poll?.id || '', selectedChoice())}
-            isSmall={true}
-          />
-        </div>
+                )}
+              </For>
+              <Paginator
+                loadNextPage={() => fetchVotesNextPage(props.poll?.id || '', selectedChoice())}
+                isSmall={true}
+              />
+            </div>
+          </Match>
+        </Switch>
       </div>
     </AdvancedSearchDialog>
   );
