@@ -180,13 +180,36 @@ const VotesModal: Component<{
     }, 0);
   }
 
+  const totalSats = () => {
+    const results = pollResults();
+    if (!results) return 0;
+
+    const choices = Object.keys(results);
+
+    return choices.reduce<number>((acc, id) => {
+      return acc + (results[id]?.satszapped || 0);
+    }, 0);
+  }
+
   const choicePercent = (id: string) => {
     const results = pollResults();
 
-    const votes = results?.[id]?.votes || 0;
-    const total = totalVotes();
+    if (props.poll?.msg.kind === Kind.UserPoll) {
+      const votes = results?.[id]?.votes || 0;
+      const total = totalVotes();
 
-    return ((votes/total)*100).toFixed(1);
+      return ((votes/total)*100).toFixed(1);
+    }
+
+    if (props.poll?.msg.kind === Kind.ZapPoll) {
+      const votes = results?.[id]?.satszapped || 0;
+      const total = totalSats();
+
+      return ((votes/total)*100).toFixed(1);
+    }
+
+    return "0";
+
   }
 
   const choiceZaps = (id: string) => {
