@@ -14,6 +14,7 @@ import { accountStore, dequeEvent, enqueEvent } from "../stores/accountStore";
 import { DecodedNaddr } from "nostr-tools/lib/types/nip19";
 import { emptyMegaFeedPage, emptyMegaFeedResults, FeedPaging, MegaFeedResults, pageResolve, updateFeedPage } from "../megaFeeds";
 import { parseBolt11 } from "../utils";
+import { emptyUser } from "../stores/profile";
 
 const getLikesStorageKey = () => {
   const key = localStorage.getItem('pubkey') || 'anon';
@@ -1020,7 +1021,7 @@ export const getZapPollVotes = (pollId: string, option: string, subId: string, p
 
         const pollVotes: PollVote[] = zaps.reduce<PollVote[]>((acc, zap) => {
           const vote: PollVote = {
-            user: users[zap.pubkey],
+            user: users[zap.pubkey] || emptyUser(zap.pubkey),
             msg: {...zap.msg},
             tags: [...zap.tags],
             id: zap.msg.id,

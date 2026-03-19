@@ -298,7 +298,7 @@ const VotesModal: Component<{
                   </div>
                 </Show>
                 <a
-                  href={app?.actions.profileLink(vote.user.npub) || ''}
+                  href={app?.actions.profileLink(vote.user?.npub) || ''}
                   onClick={() => props.onClose?.()}
                 >
                   <Avatar user={vote.user} size="vvs"></Avatar>
