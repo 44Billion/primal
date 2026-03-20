@@ -594,9 +594,12 @@ export const convertToNotes: ConvertToNotes = (page, topZaps) => {
           const noteId = nip19.neventEncode(eventPointer);
           const noteIdShort = nip19.neventEncode(eventPointerShort);
 
+          const optionTag = m.kind === Kind.ZapPoll ? 'poll_option' : 'option';
+          const endTag = m.kind === Kind.ZapPoll ? 'closed_at' : 'endsAt';
+
           const choices = m.tags.reduce<{ id: string, label: string, index: number }[]>(
             (acc, t, index) => {
-              if (t[0] !== 'option') return acc;
+              if (t[0] !== optionTag) return acc;
               return [...acc, { id: t[1], label: t[2], index }];
             },
             [],
@@ -604,7 +607,7 @@ export const convertToNotes: ConvertToNotes = (page, topZaps) => {
 
           const results = page.pollResults?.[m.id] || {};
 
-          const endsAt = parseInt((m.tags.find(t => t[0] === 'endsAt') || ['endsAt', `${now()}`])[1]);
+          const endsAt = parseInt((m.tags.find(t => t[0] === endTag) || [endTag, `${now()}`])[1]);
 
           const pollData = {
             user: mentionedUsers[m.pubkey],
@@ -1324,7 +1327,6 @@ export const convertToPolls: ConvertToPolls = (page, topZaps) => {
 
     const optionTag = msg.kind === Kind.ZapPoll ? 'poll_option' : 'option';
     const endTag = msg.kind === Kind.ZapPoll ? 'closed_at' : 'endsAt';
-
 
     const choices = msg.tags.reduce<{ id: string, label: string, index: number }[]>(
       (acc, t, index) => {

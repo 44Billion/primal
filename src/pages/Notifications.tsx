@@ -311,6 +311,25 @@ const Notifications: Component = () => {
           );
           return;
         }
+
+        if ([Kind.UserPoll, Kind.ZapPoll].includes(content.kind)) {
+          const message = content as NostrNoteContent;
+
+          setRelatedNotes('page', 'messages',
+            (msgs) => [ ...msgs, { ...message }]
+          );
+
+          return;
+        }
+
+        if ([Kind.PollResults].includes(content.kind)) {
+          const message = JSON.parse(content.content || '{}');
+
+          setRelatedNotes('page', 'pollResults', () => ({ ...message }));
+
+          return;
+        }
+
       },
       onEose: () => {
         setSortedNotifications(() => newNotifs);
@@ -322,6 +341,10 @@ const Notifications: Component = () => {
 
         // Convert related articles
         setRelatedNotes('reads', () => [...convertToArticles(relatedNotes.page)])
+
+        setRelatedNotes('pollResults', (results) => ({ ...results, ...relatedNotes.page.pollResults}))
+
+        setRelatedNotes('polls', (polls) => [...polls, ...convertToPolls(relatedNotes.page)])
 
         setRelatedNotes('streams', (streams) => [...streams, ...relatedNotes.page.streams])
 
@@ -517,7 +540,7 @@ const Notifications: Component = () => {
         if ([Kind.PollResults].includes(content.kind)) {
           const message = JSON.parse(content.content || '{}');
 
-          setOldNotifications('page', 'pollResults', () => ({ ...message }));
+          setOldNotifications('page', 'pollResults', (results) => ({ ...results, ...message }));
 
           return;
         }
@@ -540,9 +563,9 @@ const Notifications: Component = () => {
         // Convert related articles
         setOldNotifications('reads', (reads) => [...reads, ...convertToArticles(oldNotifications.page)])
 
-        setOldNotifications('polls', (polls) => [...polls, ...convertToPolls(oldNotifications.page)])
-
         setOldNotifications('pollResults', (results) => ({ ...results, ...oldNotifications.page.pollResults}))
+
+        setOldNotifications('polls', (polls) => [...polls, ...convertToPolls(oldNotifications.page)])
 
         setOldNotifications('streams', (streams) => [...streams, ...oldNotifications.page.streams])
 
@@ -692,6 +715,7 @@ const Notifications: Component = () => {
           users={getUsers(grouped[notif.your_post || ''], type)}
           note={relatedNotes.notes.find(n => n.post.id === notif.your_post)}
           read={relatedNotes.reads.find(n => n.id === notif.your_post)}
+          poll={relatedNotes.polls.find(n => n.id === notif.your_post)}
         />
       )}}
     </For>
@@ -714,6 +738,7 @@ const Notifications: Component = () => {
             users={getUsers(grouped[key], type)}
             note={relatedNotes.notes.find(n => n.post.id === key)}
             read={relatedNotes.reads.find(n => n.id === key)}
+            poll={relatedNotes.polls.find(n => n.id === key)}
             notification={notifs[0]}
           />
         )}
@@ -738,6 +763,7 @@ const Notifications: Component = () => {
             users={getUsers(grouped[key], type)}
             note={relatedNotes.notes.find(n => n.post.id === key)}
             read={relatedNotes.reads.find(n => n.id === key)}
+            poll={relatedNotes.polls.find(n => n.id === key)}
             notification={notifs[0]}
           />
         )}
@@ -763,6 +789,7 @@ const Notifications: Component = () => {
             users={getUsers(grouped[key], type)}
             note={relatedNotes.notes.find(n => n.post.id === key)}
             read={relatedNotes.reads.find(n => n.id === key)}
+            poll={relatedNotes.polls.find(n => n.id === key)}
             notification={notifs[0]}
           />
         )}
@@ -790,6 +817,7 @@ const Notifications: Component = () => {
             users={getUsers(grouped[key], type)}
             note={relatedNotes.notes.find(n => n.post.id === key)}
             read={relatedNotes.reads.find(n => n.id === key)}
+            poll={relatedNotes.polls.find(n => n.id === key)}
             iconInfo={`${truncateNumber(sats)}`}
             iconTooltip={`${sats} sats`}
             notification={notifs[0]}
@@ -837,6 +865,7 @@ const Notifications: Component = () => {
             users={rUsers[key]}
             note={notes.find(n => n.post.id === key)}
             read={relatedNotes.reads.find(n => n.id === key)}
+            poll={relatedNotes.polls.find(n => n.id === key)}
             notification={notifs[0]}
           />
         )}
@@ -883,6 +912,7 @@ const Notifications: Component = () => {
             users={rUsers[key]}
             note={notes.find(n => n.post.id === key)}
             read={relatedNotes.reads.find(n => n.id === key)}
+            poll={relatedNotes.polls.find(n => n.id === key)}
             notification={notifs[0]}
           />
         )}
@@ -928,6 +958,7 @@ const Notifications: Component = () => {
             type={type}
             users={rUsers[key]}
             note={notes.find(n => n.post.id === key)}
+            poll={relatedNotes.polls.find(n => n.id === key)}
             notification={notifs[0]}
           />
         )}
@@ -976,6 +1007,7 @@ const Notifications: Component = () => {
             type={type}
             users={rUsers[key]}
             note={notes.find(n => n.post.id === key)}
+            poll={relatedNotes.polls.find(n => n.id === key)}
             iconInfo={`${truncateNumber(sats)}`}
             iconTooltip={`${sats} sats`}
             notification={notifs[0]}
@@ -1022,6 +1054,7 @@ const Notifications: Component = () => {
             type={type}
             users={rUsers[key]}
             note={notes.find(n => n.post.id === key)}
+            poll={relatedNotes.polls.find(n => n.id === key)}
             notification={notifs[0]}
           />
         )}
@@ -1066,6 +1099,7 @@ const Notifications: Component = () => {
             type={type}
             users={rUsers[key]}
             note={notes.find(n => n.post.id === key)}
+            poll={relatedNotes.polls.find(n => n.id === key)}
             notification={notifs[0]}
           />
         )}
@@ -1111,6 +1145,7 @@ const Notifications: Component = () => {
             type={type}
             users={rUsers[key]}
             note={notes.find(n => n.post.id === key)}
+            poll={relatedNotes.polls.find(n => n.id === key)}
             notification={notifs[0]}
           />
         )}
@@ -1341,7 +1376,8 @@ const Notifications: Component = () => {
           <NotificationItem
             type={type}
             users={rUsers[key]}
-            note={notes.find(n => n.post.id === key)}
+            note={notes.find(n => n.msg.kind === Kind.Text && n.post.id === key)}
+            poll={notes.find(n => [Kind.UserPoll, Kind.ZapPoll].includes(n.msg.kind) && n.id === key)}
             notification={notifs[0]}
           />
         )}
@@ -1561,6 +1597,7 @@ const Notifications: Component = () => {
                         userStats={oldNotifications.userStats}
                         notes={oldNotifications.notes}
                         reads={oldNotifications.reads}
+                        polls={oldNotifications.polls}
                         highlights={oldNotifications.highlights}
                       />
                     )}
