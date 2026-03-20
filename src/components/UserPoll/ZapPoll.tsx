@@ -556,7 +556,7 @@ const ZapPoll: Component<UserPollProps> = (props) => {
           >
             <div class={styles.content}>
               <div class={styles.leftSide}>
-                <a href={app?.actions.profileLink(props.poll.user.npub) || ''}>
+                <a href={app?.actions.profileLink(props.poll.user?.npub) || ''}>
                   <Avatar user={props.poll.user} size="vs" />
                 </a>
               </div>

@@ -30,7 +30,7 @@ const NoteAuthorInfo: Component<{
       } />
 
       <Show
-        when={props.author.nip05}
+        when={props.author?.nip05}
       >
         <span
           class={styles.verification}
