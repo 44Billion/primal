@@ -682,6 +682,7 @@ export type FeedPage = {
   postStats: NostrPostStats,
   mentions?: Record<string, NostrNoteContent>,
   noteActions: Record<string, NoteActions>,
+  pollResults: Record<string, PollResults>,
   relayHints?: Record<string, string>,
   topZaps: Record<string, TopZap[]>,
   since?: number,

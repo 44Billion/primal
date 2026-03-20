@@ -1487,6 +1487,7 @@ const ParsedNote: Component<{
             ...(rn.mentionedUserPolls || {}),
             ...(props.note.mentionedUserPolls || {}),
           }
+
           const mentionedZapPolls = {
             ...(rn.mentionedZapPolls || {}),
             ...(props.note.mentionedZapPolls || {}),

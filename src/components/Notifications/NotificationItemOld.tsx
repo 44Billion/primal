@@ -1,10 +1,10 @@
 import { useIntl } from '@cookbook/solid-intl';
 import { A } from '@solidjs/router';
 import { Component, createEffect, createSignal, Match, Show, Switch } from 'solid-js';
-import { mentionedNotifTypes, NotificationType, notificationTypeNoteProps, notificationTypeUserProps } from '../../constants';
+import { Kind, mentionedNotifTypes, NotificationType, notificationTypeNoteProps, notificationTypeUserProps } from '../../constants';
 import { trimVerification } from '../../lib/profile';
 import { userName } from '../../stores/profile';
-import { PrimalArticle, PrimalNote, PrimalNotification, PrimalUser } from '../../types/primal';
+import { PrimalArticle, PrimalNote, PrimalNotification, PrimalUser, PrimalUserPoll } from '../../types/primal';
 import Avatar from '../Avatar/Avatar';
 
 import styles from './NotificationItem.module.scss';
@@ -64,6 +64,8 @@ import VerificationCheck from '../VerificationCheck/VerificationCheck';
 import { date } from '../../lib/dates';
 import { useSettingsContext } from '../../contexts/SettingsContext';
 import { StreamingData } from '../../lib/streaming';
+import UserPoll from '../UserPoll/UserPoll';
+import ZapPoll from '../UserPoll/ZapPoll';
 
 const typeIcons: Record<string, string> = {
   [NotificationType.NEW_USER_FOLLOWED_YOU]: userFollow,
@@ -133,6 +135,7 @@ type NotificationItemProps = {
   id?: string,
   notes: PrimalNote[],
   reads: PrimalArticle[],
+  polls: PrimalUserPoll[],
   highlights: any[],
   users: Record<string, PrimalUser>,
   streams: StreamingData[],
@@ -190,6 +193,13 @@ const NotificationItemOld: Component<NotificationItemProps> = (props) => {
     return props.reads.find(n => n.id === id)
   };
 
+  const poll = () => {
+    const prop = notificationTypeNoteProps[type()];
+    // @ts-ignore
+    const id = props.notification[prop];
+    return props.polls.find(n => n.msg.id === id);
+  };
+
   const article = () => {
     const prop = notificationTypeNoteProps[type()];
     // @ts-ignore
@@ -223,7 +233,11 @@ const NotificationItemOld: Component<NotificationItemProps> = (props) => {
       return label;
     }
 
-    const reference = note() ? 'note' : 'article';
+    let reference = 'note';
+
+    if (read()) reference = 'article';
+
+    if (poll()) reference = 'poll';
 
     if (type() === NotificationType.YOUR_POST_WAS_LIKED && !isLike()) {
       return `${intl.formatMessage(t[NotificationType.YOUR_POST_HAD_REACTION])} ${reference}`;
@@ -457,6 +471,33 @@ const NotificationItemOld: Component<NotificationItemProps> = (props) => {
                 noLinks={true}
                 notif={true}
               />
+            </div>
+          </Match>
+
+          <Match
+            when={
+              ![
+                NotificationType.NEW_USER_FOLLOWED_YOU,
+                NotificationType.USER_UNFOLLOWED_YOU,
+              ].includes(type()) &&
+              poll()
+            }
+          >
+            <div class={styles.reference}>
+              <Switch>
+                <Match when={(poll()?.msg?.kind || 0) === Kind.UserPoll}>
+                  <UserPoll
+                    poll={poll()}
+                    pollType="embedded"
+                  />
+                </Match>
+                <Match when={(poll()?.msg?.kind || 0) === Kind.ZapPoll}>
+                  <ZapPoll
+                    poll={poll()}
+                    pollType="embedded"
+                  />
+                </Match>
+              </Switch>
             </div>
           </Match>
         </Switch>

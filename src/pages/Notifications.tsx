@@ -16,9 +16,9 @@ import { Kind, minKnownProfiles, NotificationType, notificationTypeUserProps } f
 import { notifSince, setNotifSince, useNotificationsContext } from '../contexts/NotificationsContext';
 import { getNotifications, getOldNotifications, setLastSeen, truncateNumber } from '../lib/notifications';
 import { subsTo } from '../sockets';
-import { convertToArticles, convertToNotes } from '../stores/note';
+import { convertToArticles, convertToNotes, convertToPolls } from '../stores/note';
 import { convertToUser, emptyUser } from '../stores/profile';
-import { FeedPage, NostrMentionContent, NostrNoteActionsContent, NostrNoteContent, NostrStatsContent, NostrUserContent, NostrUserStatsContent, NoteActions, NotificationGroup, PrimalArticle, PrimalNote, PrimalNotification, PrimalNotifUser, PrimalUser, SortedNotifications } from '../types/primal';
+import { FeedPage, NostrMentionContent, NostrNoteActionsContent, NostrNoteContent, NostrStatsContent, NostrUserContent, NostrUserStatsContent, NoteActions, NotificationGroup, PollResults, PrimalArticle, PrimalNote, PrimalNotification, PrimalNotifUser, PrimalUser, PrimalUserPoll, SortedNotifications } from '../types/primal';
 import { notifications as t } from '../translations';
 import { Tabs } from "@kobalte/core/tabs";
 
@@ -66,16 +66,19 @@ const Notifications: Component = () => {
   type NotificationStore = {
     notes: PrimalNote[],
     reads: PrimalArticle[],
+    polls: PrimalUserPoll[],
     highlights: any[],
     users: PrimalUser[],
     page: FeedPage & { highlights: any[], streams: StreamingData[]},
     reposts: Record<string, string> | undefined,
     streams: StreamingData[],
+    pollResults: Record<string, PollResults>,
   }
 
   type OldNotificationStore = {
     notes: PrimalNote[],
     reads: PrimalArticle[],
+    polls: PrimalUserPoll[],
     highlights: any[],
     users: Record<string, PrimalUser>,
     userStats: Record<string, { followers_count: number }>,
@@ -83,6 +86,7 @@ const Notifications: Component = () => {
     reposts: Record<string, string> | undefined,
     notifications: PrimalNotification[],
     streams: StreamingData[],
+    pollResults: Record<string, PollResults>,
   }
 
   const [relatedNotes, setRelatedNotes] = createStore<NotificationStore>({
@@ -90,10 +94,12 @@ const Notifications: Component = () => {
     reads: [],
     highlights: [],
     users: [],
+    polls: [],
     page: {
       messages: [],
       users: {},
       postStats: {},
+      pollResults: {},
       mentions: {},
       noteActions: {},
       topZaps: {},
@@ -102,18 +108,21 @@ const Notifications: Component = () => {
     },
     reposts: {},
     streams: [],
+    pollResults: {},
   })
 
   const [oldNotifications, setOldNotifications] = createStore<OldNotificationStore>({
     notes: [],
     reads: [],
     highlights: [],
+    polls: [],
     users: {},
     userStats: {},
     page: {
       messages: [],
       users: {},
       postStats: {},
+      pollResults: {},
       notifications: [],
       mentions: {},
       noteActions: {},
@@ -123,7 +132,8 @@ const Notifications: Component = () => {
     },
     reposts: {},
     notifications: [],
-    streams: []
+    streams: [],
+    pollResults: {},
   })
 
   const hasNewNotifications = createMemo(() => {
@@ -494,6 +504,24 @@ const Notifications: Component = () => {
           return;
         }
 
+        if ([Kind.UserPoll, Kind.ZapPoll].includes(content.kind)) {
+          const message = content as NostrNoteContent;
+
+          setOldNotifications('page', 'messages',
+            (msgs) => [ ...msgs, { ...message }]
+          );
+
+          return;
+        }
+
+        if ([Kind.PollResults].includes(content.kind)) {
+          const message = JSON.parse(content.content || '{}');
+
+          setOldNotifications('page', 'pollResults', () => ({ ...message }));
+
+          return;
+        }
+
       },
       onEose: () => {
         // Sort notifications
@@ -511,6 +539,10 @@ const Notifications: Component = () => {
 
         // Convert related articles
         setOldNotifications('reads', (reads) => [...reads, ...convertToArticles(oldNotifications.page)])
+
+        setOldNotifications('polls', (polls) => [...polls, ...convertToPolls(oldNotifications.page)])
+
+        setOldNotifications('pollResults', (results) => ({ ...results, ...oldNotifications.page.pollResults}))
 
         setOldNotifications('streams', (streams) => [...streams, ...oldNotifications.page.streams])
 
@@ -1496,6 +1528,7 @@ const Notifications: Component = () => {
                       userStats={oldNotifications.userStats}
                       notes={oldNotifications.notes}
                       reads={oldNotifications.reads}
+                      polls={oldNotifications.polls}
                       highlights={oldNotifications.highlights}
                       streams={oldNotifications.streams}
                     />

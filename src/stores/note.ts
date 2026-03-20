@@ -4,10 +4,11 @@ import { Kind, mentionRegexNostrless, noteRegex } from "../constants";
 import { hexToNpub } from "../lib/keys";
 import { logError } from "../lib/logger";
 import { sanitize } from "../lib/notes";
-import { RepostInfo, NostrNoteContent, FeedPage, PrimalNote, PrimalRepost, NostrEventContent, NostrEOSE, NostrEvent, PrimalUser, TopZap, PrimalArticle, NostrRelaySignedEvent, PrimalUserPoll } from "../types/primal";
+import { RepostInfo, NostrNoteContent, FeedPage, PrimalNote, PrimalRepost, NostrEventContent, NostrEOSE, NostrEvent, PrimalUser, TopZap, PrimalArticle, NostrRelaySignedEvent, PrimalUserPoll, PollResults } from "../types/primal";
 import { convertToUser, emptyUser } from "./profile";
 import { StreamingData } from "../lib/streaming";
 import { encodeCoordinate } from "./megaFeed";
+import { now } from "../utils";
 
 
 export const getRepostInfo: RepostInfo = (page, message) => {
@@ -383,6 +384,8 @@ export const convertToNotes: ConvertToNotes = (page, topZaps) => {
     let mentionedHighlights: Record<string, any> = {};
     let mentionedArticles: Record<string, PrimalArticle> = {};
     let mentionedLiveEvents: Record<string, StreamingData> = {};
+    let mentionedUserPolls: Record<string, PrimalUserPoll> = {};
+    let mentionedZapPolls: Record<string, PrimalUserPoll> = {};
 
     if (mentionIds.length > 0) {
       for (let i = 0;i<mentionIds.length;i++) {
@@ -541,6 +544,13 @@ export const convertToNotes: ConvertToNotes = (page, topZaps) => {
           }
         }
 
+        if ([Kind.PollResults].includes(m.kind)) {
+          const results = JSON.parse(m.content) as Record<string, PollResults>;
+
+          page.pollResults = ({ ...page.pollResults, ...results });
+          return;
+        }
+
         if ([Kind.LiveEvent].includes(m.kind)) {
           const { coordinate, naddr } = encodeCoordinate(m, Kind.LiveEvent);
           const [kind, pubkey, identifier] = coordinate.split(':');
@@ -562,6 +572,126 @@ export const convertToNotes: ConvertToNotes = (page, topZaps) => {
           };
 
           mentionedLiveEvents[naddr] = { ...streamData };
+        }
+
+        if ([Kind.UserPoll].includes(m.kind)) {
+
+          const mentionStat = page.postStats[id];
+
+          const noteActions = (page.noteActions && page.noteActions[m.id]) ?? noActions(m.id);
+
+          const eventPointer: nip19.EventPointer ={
+            id: m.id,
+            author: m.pubkey,
+            kind: m.kind,
+            relays: m.tags.reduce((acc, t) => t[0] === 'r' && (t[1].startsWith('wss://' ) || t[1].startsWith('ws://')) ? [ ...acc, t[1]] : acc, []).slice(0,3),
+          }
+
+          const eventPointerShort: nip19.EventPointer ={
+            id: m.id,
+          }
+
+          const noteId = nip19.neventEncode(eventPointer);
+          const noteIdShort = nip19.neventEncode(eventPointerShort);
+
+          const choices = m.tags.reduce<{ id: string, label: string, index: number }[]>(
+            (acc, t, index) => {
+              if (t[0] !== 'option') return acc;
+              return [...acc, { id: t[1], label: t[2], index }];
+            },
+            [],
+          );
+
+          const results = page.pollResults?.[m.id] || {};
+
+          const endsAt = parseInt((m.tags.find(t => t[0] === 'endsAt') || ['endsAt', `${now()}`])[1]);
+
+          const pollData = {
+            user: mentionedUsers[m.pubkey],
+            msg: { ...m },
+            mentionedNotes,
+            mentionedUsers,
+            mentionedHighlights,
+            mentionedArticles,
+            mentionedLiveEvents,
+            id: m.id,
+            tags: m.tags,
+            noteId,
+            noteIdShort,
+            pubkey: m.pubkey,
+            question: sanitize(m.content),
+            choices,
+            results,
+            relayHints: page.relayHints,
+            noteActions,
+            endsAt,
+            topZaps: [],
+            stats: { ...mentionStat },
+          };
+
+          mentionedUserPolls[m.id] = { ...pollData };
+        }
+
+        if ([Kind.ZapPoll].includes(m.kind)) {
+
+          const mentionStat = page.postStats[id];
+
+          const noteActions = (page.noteActions && page.noteActions[m.id]) ?? noActions(m.id);
+
+          const eventPointer: nip19.EventPointer ={
+            id: m.id,
+            author: m.pubkey,
+            kind: m.kind,
+            relays: m.tags.reduce((acc, t) => t[0] === 'r' && (t[1].startsWith('wss://' ) || t[1].startsWith('ws://')) ? [ ...acc, t[1]] : acc, []).slice(0,3),
+          }
+
+          const eventPointerShort: nip19.EventPointer = {
+            id: m.id,
+          }
+
+          const noteId = nip19.neventEncode(eventPointer);
+          const noteIdShort = nip19.neventEncode(eventPointerShort);
+
+          const choices = m.tags.reduce<{ id: string, label: string, index: number }[]>(
+            (acc, t, index) => {
+              if (t[0] !== 'option') return acc;
+              return [...acc, { id: t[1], label: t[2], index }];
+            },
+            [],
+          );
+
+          const results = page.pollResults?.[m.id] || {};
+
+          const endsAt = parseInt((m.tags.find(t => t[0] === 'closed_at') || ['closed_at', `${now()}`])[1]);
+
+          const min = parseInt((m.tags.find(t => t[0] === 'value_minimum') || ['value_minimum', `0`])[1]);
+          const max = parseInt((m.tags.find(t => t[0] === 'value_maximum') || ['value_maximum', `0`])[1]);
+
+          const pollData = {
+            user: mentionedUsers[m.pubkey],
+            msg: { ...m },
+            mentionedNotes,
+            mentionedUsers,
+            mentionedHighlights,
+            mentionedArticles,
+            mentionedLiveEvents,
+            id: m.id,
+            tags: m.tags,
+            noteId,
+            noteIdShort,
+            pubkey: m.pubkey,
+            question: sanitize(m.content),
+            choices,
+            results,
+            relayHints: page.relayHints,
+            noteActions,
+            endsAt,
+            topZaps: [],
+            stats: { ...mentionStat },
+            zapLimits: { min, max }
+          };
+
+          mentionedZapPolls[m.id] = { ...pollData };
         }
 
       }
@@ -637,6 +767,8 @@ export const convertToNotes: ConvertToNotes = (page, topZaps) => {
       mentionedHighlights,
       mentionedArticles,
       mentionedLiveEvents,
+      mentionedUserPolls,
+      mentionedZapPolls,
       replyTo: replyTo && replyTo[1],
       tags: msg.tags,
       id: msg.id,
@@ -649,7 +781,6 @@ export const convertToNotes: ConvertToNotes = (page, topZaps) => {
     };
   });
 }
-
 
 type ConvertToArticles = (page: FeedPage | undefined, topZaps?: Record<string, TopZap[]>) => PrimalArticle[];
 
@@ -950,6 +1081,311 @@ export const convertToArticles: ConvertToArticles = (page, topZaps) => {
     });
 
     return article;
+  });
+}
+
+type ConvertToPolls = (page: FeedPage | undefined, topZaps?: Record<string, TopZap[]>) => PrimalUserPoll[];
+
+export const convertToPolls: ConvertToPolls = (page, topZaps) => {
+
+  if (page === undefined) {
+    return [];
+  }
+
+  const mentions = page.mentions || {};
+  const pageMessages = page.messages.filter(m => [Kind.UserPoll, Kind.ZapPoll].includes(m.kind));
+
+  return  pageMessages.map((message) => {
+
+    const msg: NostrNoteContent = message.kind === Kind.Repost ? parseKind6(message, Kind.LongForm) : message;
+
+    const pubkey = msg.pubkey;
+    const identifier = (msg.tags.find(t => t[0] === 'd') || [])[1];
+    const kind = Kind.LongForm;
+    const relays = (msg.tags || []).reduce<string[]>((acc, t) => t[0] === 'r' && acc.length < 2 ? [...acc, t[1]] : acc, []);
+
+    const naddr = nip19.naddrEncode({ identifier, pubkey, kind, relays });
+
+    const user = page?.users[msg.pubkey];
+    const stat = page?.postStats[msg.id];
+
+    const mentionIds = Object.keys(mentions)
+    let userMentionIds = msg.tags?.reduce((acc, t) => t[0] === 'p' ? [...acc, t[1]] : acc, []);
+
+    let tz: TopZap[] = [];
+
+    if (topZaps && (topZaps[naddr] || topZaps[msg.id])) {
+      tz = topZaps[naddr] || topZaps[msg.id] || [];
+
+      for(let i=0; i<tz.length; i++) {
+        if (userMentionIds.includes(tz[i].pubkey)) continue;
+
+        userMentionIds.push(tz[i].pubkey);
+      }
+    }
+
+    let mentionedNotes: Record<string, PrimalNote> = {};
+    let mentionedUsers: Record<string, PrimalUser> = {};
+    let mentionedHighlights: Record<string, any> = {};
+    let mentionedArticles: Record<string, PrimalArticle> = {};
+    let mentionedLiveEvents: Record<string, StreamingData> = {};
+
+    if (mentionIds.length > 0) {
+      for (let i = 0;i<mentionIds.length;i++) {
+        let id = mentionIds[i];
+        const m = mentions && mentions[id];
+
+        if (!m) {
+          continue;
+        }
+
+        for (let i = 0;i<m.tags.length;i++) {
+          const t = m.tags[i];
+          if (t[0] === 'p') {
+            mentionedUsers[t[1]] = convertToUser(page.users[t[1]], t[1]);
+          }
+        }
+
+        if ([Kind.Text].includes(m.kind)) {
+
+          const mentionStat = page.postStats[id];
+
+          const noteActions = (page.noteActions && page.noteActions[id]) ?? {
+            event_id: id,
+            liked: false,
+            replied: false,
+            reposted: false,
+            zapped: false,
+          };
+
+          const eventPointer: nip19.EventPointer ={
+            id: m.id,
+            author: m.pubkey,
+            kind: m.kind,
+            relays: m.tags.reduce((acc, t) => t[0] === 'r' && (t[1].startsWith('wss://' ) || t[1].startsWith('ws://')) ? [ ...acc, t[1]] : acc, []).slice(0,3),
+          }
+
+          const eventPointerShort: nip19.EventPointer ={
+            id: m.id,
+          }
+
+          const noteId = nip19.neventEncode(eventPointer);
+          const noteIdShort = nip19.neventEncode(eventPointerShort);
+
+          mentionedNotes[id] = {
+            // @ts-ignore TODO: Investigate this typing
+            post: {
+              ...m,
+              noteId,
+              noteIdShort,
+              likes: mentionStat?.likes || 0,
+              mentions: mentionStat?.mentions || 0,
+              reposts: mentionStat?.reposts || 0,
+              replies: mentionStat?.replies || 0,
+              zaps: mentionStat?.zaps || 0,
+              score: mentionStat?.score || 0,
+              score24h: mentionStat?.score24h || 0,
+              satszapped: mentionStat?.satszapped || 0,
+              noteActions,
+            },
+            user: convertToUser(page.users[m.pubkey], m.pubkey),
+            mentionedUsers,
+            mentionedNotes,
+            mentionedArticles,
+            mentionedHighlights,
+            mentionedLiveEvents,
+            pubkey: m.pubkey,
+            id: m.id,
+            noteId,
+            noteIdShort,
+          };
+        }
+
+        if ([Kind.LongForm, Kind.LongFormShell].includes(m.kind)) {
+
+          const mentionStat = page.postStats[id];
+
+          const noteActions = (page.noteActions && page.noteActions[id]) ?? {
+            event_id: id,
+            liked: false,
+            replied: false,
+            reposted: false,
+            zapped: false,
+          };
+
+          const identifier = (m.tags.find(t => t[0] === 'd') || [])[1];
+          const pubkey = m.pubkey;
+          const kind = Kind.LongForm;
+
+          const wordCount = page.wordCount ? page.wordCount[m.id] || 0 : 0;
+
+          let article: PrimalArticle = {
+            id: m.id,
+            pubkey: m.pubkey,
+            title: '',
+            summary: '',
+            image: '',
+            tags: [],
+            published: m.created_at || 0,
+            content: sanitize(m.content || ''),
+            user: convertToUser(user, m.pubkey),
+            topZaps: [...tz],
+            naddr: nip19.naddrEncode({ identifier, pubkey, kind }),
+            noteId: nip19.naddrEncode({ identifier, pubkey, kind }),
+            coordinate: `${kind}:${pubkey}:${identifier}`,
+            msg: m,
+            mentionedNotes,
+            mentionedUsers,
+            mentionedLiveEvents,
+            wordCount,
+            noteActions,
+            bookmarks: stat?.bookmarks || 0,
+            likes: stat?.likes || 0,
+            mentions: stat?.mentions || 0,
+            reposts: stat?.reposts || 0,
+            replies: stat?.replies || 0,
+            zaps: stat?.zaps || 0,
+            score: stat?.score || 0,
+            score24h: stat?.score24h || 0,
+            satszapped: stat?.satszapped || 0,
+            relayHints: page.relayHints,
+          };
+
+          m.tags.forEach(tag => {
+            switch (tag[0]) {
+              case 't':
+                article.tags.push(tag[1]);
+                break;
+              case 'title':
+                article.title = tag[1];
+                break;
+              case 'summary':
+                article.summary = tag[1];
+                break;
+              case 'image':
+                article.image = tag[1];
+                break;
+              case 'published':
+                article.published = parseInt(tag[1]);
+                break;
+              case 'client':
+                article.client = tag[1];
+                break;
+              default:
+                break;
+            }
+          });
+
+
+          mentionedArticles[article.naddr] = { ...article };
+        }
+
+        if ([Kind.Highlight].includes(m.kind)) {
+          mentionedHighlights[id] = {
+            user: convertToUser(page.users[m.pubkey], m.pubkey),
+            event: { ...m },
+          }
+        }
+
+        if ([Kind.LiveEvent].includes(m.kind)) {
+          const { coordinate, naddr } = encodeCoordinate(m, Kind.LiveEvent);
+          const [kind, pubkey, identifier] = coordinate.split(':');
+          const naddrShort = nip19.naddrEncode({ kind: parseInt(kind), pubkey, identifier });
+
+          const streamData = {
+            id: (m.tags?.find((t: string[]) => t[0] === 'd') || [])[1],
+            url: (m.tags?.find((t: string[]) => t[0] === 'streaming') || [])[1],
+            image: (m.tags?.find((t: string[]) => t[0] === 'image') || [])[1],
+            status: (m.tags?.find((t: string[]) => t[0] === 'status') || [])[1],
+            starts: parseInt((m.tags?.find((t: string[]) => t[0] === 'starts') || ['', '0'])[1]),
+            summary: (m.tags?.find((t: string[]) => t[0] === 'summary') || [])[1],
+            title: (m.tags?.find((t: string[]) => t[0] === 'title') || [])[1],
+            client: (m.tags?.find((t: string[]) => t[0] === 'client') || [])[1],
+            currentParticipants: parseInt((m.tags?.find((t: string[]) => t[0] === 'current_participants') || ['', '0'])[1] || '0'),
+            pubkey: m.pubkey,
+            hosts: (m.tags || []).filter(t => t[0] === 'p' && t[3].toLowerCase() === 'host').map(t => t[1]),
+            participants: (m.tags || []).filter(t => t[0] === 'p').map(t => t[1]),
+          };
+
+          mentionedLiveEvents[naddr] = { ...streamData };
+        }
+
+      }
+    }
+
+    if (userMentionIds && userMentionIds.length > 0) {
+      for (let i = 0;i<userMentionIds.length;i++) {
+        const id = userMentionIds[i];
+        const m = page.users && page.users[id];
+
+        mentionedUsers[id] = convertToUser(m, id);
+      }
+    }
+
+    const optionTag = msg.kind === Kind.ZapPoll ? 'poll_option' : 'option';
+    const endTag = msg.kind === Kind.ZapPoll ? 'closed_at' : 'endsAt';
+
+
+    const choices = msg.tags.reduce<{ id: string, label: string, index: number }[]>(
+      (acc, t, index) => {
+        if (t[0] !== optionTag) return acc;
+        return [...acc, { id: t[1], label: t[2], index }];
+      },
+      [],
+    );
+    const results = page.pollResults[msg.id];
+
+    const endsAt = parseInt((msg.tags.find(t => t[0] === endTag) || [endTag, `${now()}`])[1]);
+
+    const min = parseInt((msg.tags.find(t => t[0] === 'value_minimum') || ['value_minimum', `0`])[1]);
+    const max = parseInt((msg.tags.find(t => t[0] === 'value_maximum') || ['value_maximum', `0`])[1]);
+
+    const eventPointer: nip19.EventPointer ={
+      id: msg.id,
+      author: msg.pubkey,
+      kind: msg.kind,
+      relays: msg.tags.reduce((acc, t, i) => (t[0] === 'r' && (t[1].startsWith('wss://' ) || t[1].startsWith('ws://'))) ? [ ...acc, t[1]] : acc, []).slice(0,3),
+    }
+
+    const eventPointerShort: nip19.EventPointer ={
+      id: msg.id,
+    }
+
+    let poll: PrimalUserPoll = {
+      user: mentionedUsers[msg.pubkey],
+      msg: { ...msg },
+      mentionedNotes,
+      mentionedUsers,
+      mentionedHighlights,
+      mentionedArticles,
+      mentionedLiveEvents,
+      id: msg.id,
+      tags: msg.tags,
+      noteId: nip19.neventEncode(eventPointer),
+      noteIdShort: nip19.neventEncode(eventPointerShort),
+      pubkey: msg.pubkey,
+      question: sanitize(msg.content),
+      choices,
+      results,
+      relayHints: page.relayHints,
+      noteActions: (page.noteActions && page.noteActions[msg.id]) ?? noActions(msg.id),
+      endsAt,
+      topZaps: [],
+      zapLimits: { min, max },
+      stats: {
+        bookmarks: stat?.bookmarks || 0,
+        likes: stat?.likes || 0,
+        mentions: stat?.mentions || 0,
+        reposts: stat?.reposts || 0,
+        replies: stat?.replies || 0,
+        zaps: stat?.zaps || 0,
+        score: stat?.score || 0,
+        score24h: stat?.score24h || 0,
+        satszapped: stat?.satszapped || 0,
+      },
+    };
+
+    return poll;
   });
 }
 
