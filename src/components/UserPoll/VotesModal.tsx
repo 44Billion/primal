@@ -274,7 +274,7 @@ const VotesModal: Component<{
                       class={styles.satsZapped}
                       title={`${choiceZaps(choice.id)}`}
                     >
-                      {humanizeNumber(choiceZaps(choice.id), true)} <span>sats</span>
+                      {choiceZaps(choice.id).toLocaleString()} <span>sats</span>
                     </div>
                   </Show>
                   <div class={styles.moreVotes}>see votes</div>
