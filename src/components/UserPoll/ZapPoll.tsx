@@ -182,7 +182,7 @@ const ZapPoll: Component<UserPollProps> = (props) => {
     const choices = Object.keys(results);
 
     return choices.reduce<[string, number]>((acc, id) => {
-      const votes = results[id]?.votes || 0;
+      const votes = results[id]?.satszapped || 0;
       return votes >= acc[1] ? [id, votes] : acc;
     }, ['', 0])
   }
@@ -432,7 +432,7 @@ const ZapPoll: Component<UserPollProps> = (props) => {
                                 class={styles.satsZapped}
                                 title={`${choiceZaps(choice.id)}`}
                               >
-                                {humanizeNumber(choiceZaps(choice.id), true)} <span>sats</span>
+                                {choiceZaps(choice.id).toLocaleString()} <span>sats</span>
                               </div>
                             </Show>
                           </div>
@@ -468,7 +468,7 @@ const ZapPoll: Component<UserPollProps> = (props) => {
                                 class={styles.satsZapped}
                                 title={`${choiceZaps(choice.id)}`}
                               >
-                                {humanizeNumber(choiceZaps(choice.id), true)} <span>sats</span>
+                                {choiceZaps(choice.id).toLocaleString()} <span>sats</span>
                               </div>
                             </Show>
                           </div>
@@ -615,7 +615,7 @@ const ZapPoll: Component<UserPollProps> = (props) => {
                                   class={styles.satsZapped}
                                   title={`${choiceZaps(choice.id)}`}
                                 >
-                                  {humanizeNumber(choiceZaps(choice.id), true)} <span>sats</span>
+                                  {choiceZaps(choice.id).toLocaleString()} <span>sats</span>
                                 </div>
                               </Show>
                             </div>
@@ -651,7 +651,7 @@ const ZapPoll: Component<UserPollProps> = (props) => {
                                   class={styles.satsZapped}
                                   title={`${choiceZaps(choice.id)}`}
                                 >
-                                  {humanizeNumber(choiceZaps(choice.id), true)} <span>sats</span>
+                                  {choiceZaps(choice.id).toLocaleString()} <span>sats</span>
                                 </div>
                               </Show>
                             </div>
@@ -790,7 +790,7 @@ const ZapPoll: Component<UserPollProps> = (props) => {
                                   class={styles.satsZapped}
                                   title={`${choiceZaps(choice.id)}`}
                                 >
-                                  {humanizeNumber(choiceZaps(choice.id), true)} <span>sats</span>
+                                  {choiceZaps(choice.id).toLocaleString()} <span>sats</span>
                                 </div>
                               </Show>
                             </div>
@@ -826,7 +826,7 @@ const ZapPoll: Component<UserPollProps> = (props) => {
                                   class={styles.satsZapped}
                                   title={`${choiceZaps(choice.id)}`}
                                 >
-                                  {humanizeNumber(choiceZaps(choice.id), true)} <span>sats</span>
+                                  {choiceZaps(choice.id).toLocaleString()} <span>sats</span>
                                 </div>
                               </Show>
                             </div>
