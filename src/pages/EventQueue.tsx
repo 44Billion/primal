@@ -275,9 +275,24 @@ const EventQueuePage: Component = () => {
   }
 
   const retrySigning = (item: NostrRelaySignedEvent) => {
-    if (item.sig) return;
 
     return new Promise<void>(async (resolve, reject) => {
+      if (item.sig) {
+        let timeout = setTimeout(
+          () => reject('relay_send_timeout'),
+          8_000,
+        );
+
+        sendSignedEvent(item, {
+          success: () => {
+            clearTimeout(timeout);
+            resolve();
+          },
+        });
+
+        return;
+      }
+
       try {
         const event = await signEvent(item);
 
