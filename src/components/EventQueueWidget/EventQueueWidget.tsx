@@ -5,7 +5,7 @@ import { accountStore } from '../../stores/accountStore';
 
 export const EVENT_PUBLISH_DELAY = 12_000;
 
-const EventQueueWidget: Component<{ id?: string, hideName?: boolean }> = (props) => {
+const EventQueueWidget: Component<{ id?: string, isSmall?: boolean }> = (props) => {
 
   const [queueLength, setQueueLength] = createSignal(0);
 
@@ -28,7 +28,7 @@ const EventQueueWidget: Component<{ id?: string, hideName?: boolean }> = (props)
   return (
     <div id={props.id}>
       <Show when={queueLength() > 0}>
-        <a href="/pending" class={styles.publishQueueInfo}>
+        <a href="/pending" class={`${styles.publishQueueInfo} ${props.isSmall ? styles.small : ''}`}>
           <div class={styles.clockIcon}></div>
           <div class={styles.label}>
             Publish pending ({queueLength()})

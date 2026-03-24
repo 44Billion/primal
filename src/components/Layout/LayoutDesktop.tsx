@@ -70,7 +70,7 @@ const LayoutDesktop: Component<{
                   </div>
 
                   <div class={styles.leftFooter}>
-                    <EventQueueWidget />
+                    <EventQueueWidget isSmall={true} />
                     <Show when={location.pathname !== '/new'}>
                       <ProfileWidget hideName={true} />
                     </Show>

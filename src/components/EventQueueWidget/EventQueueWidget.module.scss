@@ -22,6 +22,15 @@
       background-color: var(--text-secondary);
     }
   }
+
+  &.small {
+    width: fit-content;
+    padding-inline: 6px;
+    margin-left: 6px;
+    .label {
+      display: none;
+    }
+  }
 }
 
 .clockIcon {
