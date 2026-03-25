@@ -184,6 +184,8 @@ export type AccountStore = {
   blossomServers: string[],
   mirrorBlossom: boolean,
   eventQueueRetry: number,
+
+  sendErrors: Record<string, string>,
 }
 
 let relaysExplicitlyClosed: string[] = [];
@@ -245,6 +247,9 @@ export const initAccountStore: AccountStore = {
   },
   eventQueue: [],
   eventQueueRetry: 16,
+
+  sendErrors: {},
+
   // @ts-ignore
   // relayPool: new SimplePool({ enablePing: true, enableReconnect: true }),
 };

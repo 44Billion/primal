@@ -23,6 +23,7 @@ import settingsIcon from '../../assets/icons/settings.svg';
 
 import genericIcon from '../../assets/icons/nav/messages.svg';
 import { Collapsible } from '@kobalte/core/collapsible';
+import { accountStore } from '../../stores/accountStore';
 
 const GenericEvent: Component<{
   event: NostrRelaySignedEvent,
@@ -223,6 +224,9 @@ const GenericEvent: Component<{
         </div>
         <div class={styles.eventDescription}>
           {description()}
+          <span>
+            {accountStore.sendErrors[props.event.id]}
+          </span>
         </div>
         <Show when={!props.event.sig}>
           <button

@@ -246,11 +246,12 @@ const EventQueuePage: Component = () => {
 
     const newQueue = await processArrayUntilFailure<NostrRelaySignedEvent>(queue, (item) => {
       return new Promise<void>(async (resolve, reject) => {
-        if (!item.sig) {
+        let i = { ...item };
+        if (!i.sig) {
           try {
-            const event = await signEvent(item);
+            const event = await signEvent(i);
 
-            item = { ...event };
+            i = { ...event };
           } catch (reason) {
             reject('relay_send_timeout');
           }
@@ -261,7 +262,7 @@ const EventQueuePage: Component = () => {
           8_000,
         );
 
-        sendSignedEvent(item, {
+        sendSignedEvent(i, {
           success: () => {
             clearTimeout(timeout);
             resolve();

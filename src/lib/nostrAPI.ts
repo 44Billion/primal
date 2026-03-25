@@ -1,5 +1,5 @@
 import { unwrap } from "solid-js/store";
-import { accountStore, dequeUnsignedEvent, enqueUnsignedEvent } from "../stores/accountStore";
+import { accountStore, dequeUnsignedEvent, enqueUnsignedEvent, updateAccountStore } from "../stores/accountStore";
 import {
   NostrExtension,
   NostrRelayEvent,
@@ -172,6 +172,7 @@ export const signEvent = async (e: NostrRelayEvent) => {
       throw(reason);
     }
     enqueUnsignedEvent(unwrap(event), tempId);
+        updateAccountStore('sendErrors', () => ({ [tempId]: `${reason}` }));
     throw(reason);
   }
 };
