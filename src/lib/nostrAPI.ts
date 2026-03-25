@@ -9,7 +9,7 @@ import {
   SendPaymentResponse,
   WebLnExtension,
  } from "../types/primal";
-import { uuidv4 } from "../utils";
+import { isDev, uuidv4 } from "../utils";
 import { PrimalNip46 } from "./PrimalNip46";
 import { PrimalNostr } from "./PrimalNostr";
 
@@ -172,7 +172,7 @@ export const signEvent = async (e: NostrRelayEvent) => {
       throw(reason);
     }
     enqueUnsignedEvent(unwrap(event), tempId);
-        updateAccountStore('sendErrors', () => ({ [tempId]: `${reason}` }));
+    isDev() && updateAccountStore('sendErrors', () => ({ [tempId]: `${reason}` }));
     throw(reason);
   }
 };
