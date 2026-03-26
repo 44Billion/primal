@@ -22,6 +22,7 @@ import NoteTopZapsCompact from './NoteTopZapsCompact';
 import { addrRegexG, imageRegexG, linebreakRegex, noteRegex, urlRegexG } from '../../constants';
 import { TranslatorProvider } from '../../contexts/TranslatorContext';
 import { accountStore } from '../../stores/accountStore';
+import { useNavigate } from '@solidjs/router';
 
 export type NoteReactionsState = {
   bookmarks?: number,
@@ -73,6 +74,7 @@ const Note: Component<NoteProps> = (props) => {
 
   const threadContext = useThreadContext();
   const app = useAppContext();
+  const navigate = useNavigate();
 
   createEffect(() => {
     if (props.quoteCount) {
@@ -85,7 +87,12 @@ const Note: Component<NoteProps> = (props) => {
   const repost = () => props.note.repost;
 
   const navToThread = (note: PrimalNote) => {
-    props.onClick && props.onClick(note);
+    if (props.onClick) {
+      props.onClick(note);
+    }
+    else {
+      navigate(noteLinkId());
+    }
     threadContext?.actions.setPrimaryNote(note);
   };
 
@@ -522,9 +529,9 @@ const Note: Component<NoteProps> = (props) => {
 
           <NoteReplyToHeader note={props.note} defaultParentAuthor={props.defaultParentAuthor} />
 
-          <a
+          <div
             class={`${styles.message} ${bigMessageFont() ? styles.bigFont : ''}`}
-            href={!props.onClick ? noteLinkId() : ''}
+            // href={!props.onClick ? noteLinkId() : ''}
             onClick={() => navToThread(props.note)}
           >
             <ParsedNote
@@ -533,7 +540,7 @@ const Note: Component<NoteProps> = (props) => {
               width={window.innerWidth}
               margins={45}
             />
-          </a>
+          </div>
 
           <NoteTopZapsCompact
             note={props.note}
@@ -602,10 +609,11 @@ const Note: Component<NoteProps> = (props) => {
 
               <NoteReplyToHeader note={props.note} defaultParentAuthor={props.defaultParentAuthor} />
 
-              <a
+              <div
                 class={styles.message}
-                href={!props.onClick ? noteLinkId() : ''}
+                // href={!props.onClick ? noteLinkId() : ''}
                 onClick={(e) => {
+                  console.log('CLICK')
                   if (app?.showNoteVideoContextMenu) {
                     e.preventDefault();
                     return false;
@@ -620,7 +628,7 @@ const Note: Component<NoteProps> = (props) => {
                   margins={1}
                   footerSize="short"
                 />
-              </a>
+              </div>
 
               <NoteTopZapsCompact
                 note={props.note}
@@ -694,10 +702,10 @@ const Note: Component<NoteProps> = (props) => {
 
 
       <Match when={noteType() === 'suggestion'}>
-        <a
+        <div
           id={props.id}
           class={`${styles.noteSuggestion}`}
-          href={!props.onClick ? noteLinkId() : ''}
+          // href={!props.onClick ? noteLinkId() : ''}
           onClick={() => navToThread(props.note)}
           data-event={props.note.post.id}
           data-event-bech32={props.note.post.noteId}
@@ -739,7 +747,7 @@ const Note: Component<NoteProps> = (props) => {
               </div>
             </div>
           </div>
-        </a>
+        </div>
       </Match>
     </Switch>
   );
