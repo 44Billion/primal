@@ -31,8 +31,10 @@ export class Queue {
 
   enqueue<T>(action: () => Promise<T>) {
     return new Promise<T>((resolve, reject) => {
-      this.#items.push({ action, resolve, reject });
-      this.dequeue();
+      setTimeout(() => {
+        this.#items.push({ action, resolve, reject });
+        this.dequeue();
+      }, 0);
     });
   }
 
