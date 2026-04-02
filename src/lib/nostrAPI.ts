@@ -151,22 +151,22 @@ export const handleSignerFailure = (reason: any) => {
     });
   }
 
-  if (reason === 'promise_timeout' && accountStore.loginType === 'extension') {
-    openConfirmDialog({
-      title: 'Cant find a nostr extension',
-      description: 'Primal Studio was unable to find an active nostr extension. Please make sure an extension is available and active',
-      confirmLabel: 'Retry',
-      onConfirm: () => {
-        refreshQueue();
-        closeConfirmDialog();
-      },
-      abortLabel: 'Log out',
-      onAbort: () => {
-        logout();
-        closeConfirmDialog();
-      }
-    });
-  }
+  // if (reason === 'promise_timeout' && accountStore.loginType === 'extension') {
+  //   openConfirmDialog({
+  //     title: 'Cant find a nostr extension',
+  //     description: 'Primal Studio was unable to find an active nostr extension. Please make sure an extension is available and active',
+  //     confirmLabel: 'Retry',
+  //     onConfirm: () => {
+  //       refreshQueue();
+  //       closeConfirmDialog();
+  //     },
+  //     abortLabel: 'Log out',
+  //     onAbort: () => {
+  //       logout();
+  //       closeConfirmDialog();
+  //     }
+  //   });
+  // }
 }
 
 export const timeoutPromiseResolve = (timeout = 8_000) => {
