@@ -137,7 +137,7 @@ export const handleSignerFailure = (reason: any) => {
   if (reason === 'promise_timeout' && accountStore.loginType === 'nip46') {
     openSignerUnreachableDialog({
       title: 'Remote signer unreachable',
-      description: 'Primal Studio can\'t reach the remote signer. Please make sure your signer is online and the Primal Studio session is active',
+      description: 'Primal can\'t reach the remote signer. Please make sure your signer is online and the Primal session is active',
       confirmLabel: 'Retry',
       onConfirm: () => {
         refreshQueue();
@@ -154,7 +154,7 @@ export const handleSignerFailure = (reason: any) => {
   // if (reason === 'promise_timeout' && accountStore.loginType === 'extension') {
   //   openConfirmDialog({
   //     title: 'Cant find a nostr extension',
-  //     description: 'Primal Studio was unable to find an active nostr extension. Please make sure an extension is available and active',
+  //     description: 'Primal was unable to find an active nostr extension. Please make sure an extension is available and active',
   //     confirmLabel: 'Retry',
   //     onConfirm: () => {
   //       refreshQueue();
