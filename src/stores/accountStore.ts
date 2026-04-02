@@ -120,6 +120,7 @@ import {
 import { fetchPeople } from "../megaFeeds";
 import { appSigner, getAppSK, setAppSigner } from "../lib/PrimalNip46";
 import { clearNWC } from "../pages/Settings/NostrWalletConnect";
+import { ConfirmDialogInfo } from "../components/ConfirmModal/ConfirmModal";
 
 
 export type FollowData = {
@@ -186,6 +187,12 @@ export type AccountStore = {
   eventQueueRetry: number,
 
   sendErrors: Record<string, string>,
+
+  showConfirmDialog: boolean,
+  confirmDialogInfo: ConfirmDialogInfo | undefined,
+
+  showSignerUnreachableDialog: boolean,
+  signerUnreachableDialogInfo: ConfirmDialogInfo | undefined,
 }
 
 let relaysExplicitlyClosed: string[] = [];
@@ -250,6 +257,11 @@ export const initAccountStore: AccountStore = {
 
   sendErrors: {},
 
+  showConfirmDialog: false,
+  confirmDialogInfo: undefined,
+
+  showSignerUnreachableDialog: false,
+  signerUnreachableDialogInfo: undefined,
   // @ts-ignore
   // relayPool: new SimplePool({ enablePing: true, enableReconnect: true }),
 };
@@ -257,6 +269,26 @@ export const initAccountStore: AccountStore = {
   export const getRelayUrls = () => Object.keys(accountStore.relaySettings || {}).map(utils.normalizeURL)
 
 // ACTIONS ---------------------------------------------------------------------
+
+
+  export const openConfirmDialog = (config: ConfirmDialogInfo) => {
+    updateAccountStore('confirmDialogInfo', reconcile({ ...config }));
+    updateAccountStore('showConfirmDialog', () => true);
+  };
+
+  export const closeConfirmDialog = () => {
+    updateAccountStore('showConfirmDialog', () => false);
+  };
+
+
+  export const openSignerUnreachableDialog = (config: ConfirmDialogInfo) => {
+    updateAccountStore('signerUnreachableDialogInfo', reconcile({ ...config }));
+    updateAccountStore('showSignerUnreachableDialog', () => true);
+  };
+
+  export const closeSignerUnreachableDialog = () => {
+    updateAccountStore('showSignerUnreachableDialog', () => false);
+  };
 
   export const eventInQueueIndex = (event: NostrRelaySignedEvent | NostrRelayEvent, queue = accountStore.eventQueue) => {
     const index = queue.findIndex(e => {

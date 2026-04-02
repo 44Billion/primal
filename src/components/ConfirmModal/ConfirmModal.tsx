@@ -10,17 +10,21 @@ import ButtonPrimary from '../Buttons/ButtonPrimary';
 import ButtonSecondary from '../Buttons/ButtonSecondary';
 import AdvancedSearchDialog from '../AdvancedSearch/AdvancedSearchDialog';
 
-const ConfirmModal: Component<{
-  id?: string,
-  open?: boolean,
-  setOpen?: (v: boolean) => void,
+export type ConfirmDialogInfo = {
   title?: string,
   description?: string,
   confirmLabel?: string,
   abortLabel?: string
   onConfirm?: () => void,
   onAbort?: () => void,
-}> = (props) => {
+};
+
+const ConfirmModal: Component<ConfirmDialogInfo & {
+    id?: string,
+    open?: boolean,
+    setOpen?: (v: boolean) => void,
+  }
+> = (props) => {
 
   const intl = useIntl();
 

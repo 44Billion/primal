@@ -613,7 +613,6 @@ const Note: Component<NoteProps> = (props) => {
                 class={styles.message}
                 // href={!props.onClick ? noteLinkId() : ''}
                 onClick={(e) => {
-                  console.log('CLICK')
                   if (app?.showNoteVideoContextMenu) {
                     e.preventDefault();
                     return false;

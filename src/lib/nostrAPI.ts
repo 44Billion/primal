@@ -1,5 +1,5 @@
 import { unwrap } from "solid-js/store";
-import { accountStore, dequeUnsignedEvent, enqueUnsignedEvent, updateAccountStore } from "../stores/accountStore";
+import { accountStore, closeConfirmDialog, closeSignerUnreachableDialog, dequeUnsignedEvent, enqueUnsignedEvent, logout, openConfirmDialog, openSignerUnreachableDialog, refreshQueue, updateAccountStore } from "../stores/accountStore";
 import {
   NostrExtension,
   NostrRelayEvent,
@@ -133,6 +133,42 @@ export const timeoutPromise = (timeout = 8_000) => {
   });
 }
 
+export const handleSignerFailure = (reason: any) => {
+  if (reason === 'promise_timeout' && accountStore.loginType === 'nip46') {
+    openSignerUnreachableDialog({
+      title: 'Remote signer unreachable',
+      description: 'Primal Studio can\'t reach the remote signer. Please make sure your signer is online and the Primal Studio session is active',
+      confirmLabel: 'Retry',
+      onConfirm: () => {
+        refreshQueue();
+        closeSignerUnreachableDialog();
+      },
+      abortLabel: 'Log out',
+      onAbort: () => {
+        logout();
+        closeSignerUnreachableDialog();
+      }
+    });
+  }
+
+  if (reason === 'promise_timeout' && accountStore.loginType === 'extension') {
+    openConfirmDialog({
+      title: 'Cant find a nostr extension',
+      description: 'Primal Studio was unable to find an active nostr extension. Please make sure an extension is available and active',
+      confirmLabel: 'Retry',
+      onConfirm: () => {
+        refreshQueue();
+        closeConfirmDialog();
+      },
+      abortLabel: 'Log out',
+      onAbort: () => {
+        logout();
+        closeConfirmDialog();
+      }
+    });
+  }
+}
+
 export const timeoutPromiseResolve = (timeout = 8_000) => {
   return new Promise<undefined>((resolve, reject) => {
     setTimeout(() => {
@@ -175,6 +211,7 @@ export const signEvent = async (e: NostrRelayEvent) => {
     }
     enqueUnsignedEvent(unwrap(event), tempId);
     isDev() && updateAccountStore('sendErrors', () => ({ [tempId]: `${reason}` }));
+    handleSignerFailure(reason);
     throw(reason);
   }
 };
@@ -183,8 +220,12 @@ export const getPublicKey = async () => {
   try {
     return await enqueueNostr<string>(async (nostr) => {
       try {
-        return await nostr.getPublicKey();
+        return await Promise.race([
+          nostr.getPublicKey(),
+          timeoutPromise(),
+        ]) as string;
       } catch(reason) {
+        handleSignerFailure(reason);
         throw(reason);
       }
     });
@@ -197,8 +238,12 @@ export const getRelays = async () => {
   try {
     return await enqueueNostr<NostrRelays>(async (nostr) => {
       try {
-        return await nostr.getRelays();
+        return await Promise.race([
+          nostr.getRelays(),
+          timeoutPromise(),
+        ]) as NostrRelays;
       } catch(reason) {
+        handleSignerFailure(reason);
         throw(reason);
       }
     });
@@ -211,8 +256,12 @@ export const encrypt = async (pubkey: string, message: string) => {
   try {
     return await enqueueNostr<string>(async (nostr) => {
       try {
-        return await nostr.nip04.encrypt(pubkey, message);
+        return await Promise.race([
+          nostr.nip04.encrypt(pubkey, message),
+          timeoutPromise(),
+        ]) as string;
       } catch(reason) {
+        handleSignerFailure(reason);
         throw(reason);
       }
     });
@@ -225,8 +274,12 @@ export const decrypt = async (pubkey: string, message: string) => {
   try {
     return await enqueueNostr<string>(async (nostr) => {
       try {
-        return await nostr.nip04.decrypt(pubkey, message);
+        return await Promise.race([
+          nostr.nip04.decrypt(pubkey, message),
+          timeoutPromise(),
+        ]) as string;
       } catch(reason) {
+        handleSignerFailure(reason);
         throw(reason);
       }
     });
@@ -240,8 +293,12 @@ export const encrypt44 = async (pubkey: string, message: string) => {
   try {
     return await enqueueNostr<string>(async (nostr) => {
       try {
-        return await nostr.nip44.encrypt(pubkey, message);
+        return await Promise.race([
+          nostr.nip44.encrypt(pubkey, message),
+          timeoutPromise(),
+        ]) as string;
       } catch(reason) {
+        handleSignerFailure(reason);
         throw(reason);
       }
     });
@@ -254,8 +311,12 @@ export const decrypt44 = async (pubkey: string, message: string) => {
   try {
     return await enqueueNostr<string>(async (nostr) => {
       try {
-        return await nostr.nip44.decrypt(pubkey, message);
+        return await Promise.race([
+          nostr.nip44.decrypt(pubkey, message),
+          timeoutPromise(),
+        ]) as string;
       } catch(reason) {
+        handleSignerFailure(reason);
         throw(reason);
       }
     });
@@ -267,9 +328,13 @@ export const decrypt44 = async (pubkey: string, message: string) => {
 export const enableWebLn = async () => {
   try {
     return await enqueueWebLn<void>(async (webln) => {
-      try {
-        return await webln.enable();
+     try {
+        return await Promise.race([
+          webln.enable(),
+          timeoutPromise(),
+        ]) as void;
       } catch(reason) {
+        handleSignerFailure(reason);
         throw(reason);
       }
     });
@@ -282,8 +347,12 @@ export const sendPayment = async (paymentRequest: string) => {
   try {
     return await enqueueWebLn<SendPaymentResponse>(async (webln) => {
       try {
-        return await webln.sendPayment(paymentRequest);
+        return await Promise.race([
+          webln.sendPayment(paymentRequest),
+          timeoutPromise(),
+        ]) as SendPaymentResponse;
       } catch(reason) {
+        handleSignerFailure(reason);
         throw(reason);
       }
     });

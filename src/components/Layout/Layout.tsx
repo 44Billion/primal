@@ -32,7 +32,7 @@ import LiveStreamContextMenu from '../Note/LiveStreamContextMenu';
 import ProfileQrCodeModal from '../ProfileQrCodeModal/ProfileQrCodeModal';
 import ReportContentModal from '../ReportContentModal/ReportContentModal';
 import NoteVideoContextMenu from '../Note/NoteVideoContextMenu';
-import { accountStore, checkNostrKey, doAfterLogin, loginUsingLocalNsec, logout, resolveContacts, setFlag, setFollowData, setSec, setString } from '../../stores/accountStore';
+import { accountStore, checkNostrKey, doAfterLogin, loginUsingLocalNsec, logout, resolveContacts, setFlag, setFollowData, setSec, setString, updateAccountStore } from '../../stores/accountStore';
 import { storeSec } from '../../lib/localStore';
 import GetStartedModal from '../LoginModal/GetStartedModal';
 import VotesModal from '../UserPoll/VotesModal';
@@ -287,6 +287,28 @@ const Layout: Component<any> = (props) => {
           onAbort={() => {
             setFlag('showForgot', false);
           }}
+        />
+
+        <ConfirmModal
+          open={accountStore.showConfirmDialog}
+          setOpen={(v) => updateAccountStore('showConfirmDialog', v)}
+          title={accountStore.confirmDialogInfo?.title}
+          description={accountStore.confirmDialogInfo?.description}
+          confirmLabel={accountStore.confirmDialogInfo?.confirmLabel}
+          onConfirm={accountStore.confirmDialogInfo?.onConfirm}
+          abortLabel={accountStore.confirmDialogInfo?.abortLabel}
+          onAbort={accountStore.confirmDialogInfo?.onAbort}
+        />
+
+        <ConfirmModal
+          open={accountStore.showSignerUnreachableDialog}
+          setOpen={(v) => updateAccountStore('showSignerUnreachableDialog', v)}
+          title={accountStore.signerUnreachableDialogInfo?.title}
+          description={accountStore.signerUnreachableDialogInfo?.description}
+          confirmLabel={accountStore.signerUnreachableDialogInfo?.confirmLabel}
+          onConfirm={accountStore.signerUnreachableDialogInfo?.onConfirm}
+          abortLabel={accountStore.signerUnreachableDialogInfo?.abortLabel}
+          onAbort={accountStore.signerUnreachableDialogInfo?.onAbort}
         />
 
         <NoteContextMenu
