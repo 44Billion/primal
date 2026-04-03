@@ -51,14 +51,12 @@ import postReactedLight from '../../assets/icons/notifications/light/post_reacte
 
 import liveEventStarted from '../../assets/icons/notifications/live.svg';
 
-import NotificationNote from '../Note/NotificationNote/NotificationNote';
 import NotificationAvatar from '../NotificationAvatar/NotificationAvatar';
 import { notificationsNew as t } from '../../translations';
 import { hookForDev } from '../../lib/devTools';
 import Note from '../Note/Note';
 import { useAppContext } from '../../contexts/AppContext';
 import ArticleHighlight from '../ArticleHighlight/ArticleHighlight';
-import ArticleCompactPreview from '../ArticlePreview/ArticleCompactPreview';
 import { likes } from './NotificationItemOld';
 import VerificationCheck from '../VerificationCheck/VerificationCheck';
 import { date } from '../../lib/dates';
