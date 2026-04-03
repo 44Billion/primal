@@ -38,6 +38,7 @@ import GetStartedModal from '../LoginModal/GetStartedModal';
 import VotesModal from '../UserPoll/VotesModal';
 import ZapVote from '../CustomZap/ZapVote';
 import MissingNWCModal from '../MissingNWCModal/MissingNWCModal';
+import ConfirmAlternativeModal from '../ConfirmModal/ConfirmAlternativeModal';
 
 export const [isHome, setIsHome] = createSignal(false);
 
@@ -289,7 +290,7 @@ const Layout: Component<any> = (props) => {
           }}
         />
 
-        <ConfirmModal
+        <ConfirmAlternativeModal
           open={accountStore.showConfirmDialog}
           setOpen={(v) => updateAccountStore('showConfirmDialog', v)}
           title={accountStore.confirmDialogInfo?.title}
@@ -298,9 +299,11 @@ const Layout: Component<any> = (props) => {
           onConfirm={accountStore.confirmDialogInfo?.onConfirm}
           abortLabel={accountStore.confirmDialogInfo?.abortLabel}
           onAbort={accountStore.confirmDialogInfo?.onAbort}
+          onCancel={() => updateAccountStore('showConfirmDialog', false)}
+          hideCancelButton={true}
         />
 
-        <ConfirmModal
+        <ConfirmAlternativeModal
           open={accountStore.showSignerUnreachableDialog}
           setOpen={(v) => updateAccountStore('showSignerUnreachableDialog', v)}
           title={accountStore.signerUnreachableDialogInfo?.title}
@@ -309,6 +312,8 @@ const Layout: Component<any> = (props) => {
           onConfirm={accountStore.signerUnreachableDialogInfo?.onConfirm}
           abortLabel={accountStore.signerUnreachableDialogInfo?.abortLabel}
           onAbort={accountStore.signerUnreachableDialogInfo?.onAbort}
+          onCancel={() => updateAccountStore('showSignerUnreachableDialog', false)}
+          hideCancelButton={true}
         />
 
         <NoteContextMenu

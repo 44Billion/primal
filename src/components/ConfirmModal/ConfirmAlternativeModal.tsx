@@ -21,6 +21,7 @@ const ConfirmAlternativeModal: Component<{
   onConfirm?: () => void,
   onCancel?: () => void,
   onAbort?: () => void,
+  hideCancelButton?: boolean,
 }> = (props) => {
 
   const intl = useIntl();
@@ -58,7 +59,7 @@ const ConfirmAlternativeModal: Component<{
             </ButtonSecondary>
           </Show>
 
-          <Show when={props.onCancel}>
+          <Show when={props.onCancel && !props.hideCancelButton}>
             <ButtonSecondary
               onClick={props.onCancel}
               light={true}
