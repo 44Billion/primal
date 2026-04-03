@@ -13,6 +13,7 @@ import { ConfirmInfo, useAppContext } from '../../contexts/AppContext';
 import { useDMContext } from '../../contexts/DMContext';
 import ButtonSecondary from '../Buttons/ButtonSecondary';
 import { accountStore, hasPublicKey, showGetStarted, showNewNoteForm } from '../../stores/accountStore';
+import UpdateAvailableDialog from '../UpdateAvailableDialog/UpdateAvailableDialog';
 
 const NavMenu: Component< { id?: string } > = (props) => {
   const notifications = useNotificationsContext();
@@ -207,6 +208,8 @@ const NavMenu: Component< { id?: string } > = (props) => {
           </ButtonPrimary>
         </div>
       </Show>
+
+      <UpdateAvailableDialog />
     </div>
   )
 }

@@ -1,4 +1,5 @@
-const IMAGE_CACHE = 'images-v1';
+export const version = import.meta.env.PRIMAL_VERSION;
+const IMAGE_CACHE = `images-${version}`;
 
 const DAY = 1000 * 60 * 60 * 24;
 
@@ -34,15 +35,51 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('activate', event => {
-  if (self.location.hostname === 'localhost') {
-    console.log('V1 now ready to handle fetches!');
-  }
+  event.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(
+        keys
+          .filter(k => k !== IMAGE_CACHE)
+          .map(k => caches.delete(k))
+      )
+    )
+    .then(() => self.clients.claim())
+    .then(() => {
+      // Notify all open tabs that a new version is active
+      self.clients.matchAll({ type: 'window' }).then(clients => {
+        clients.forEach(client => {
+          client.postMessage({ type: 'SW_ACTIVATED' });
+        });
+      });
+    })
+  );
 });
 
 // Fetch event - intercept image requests
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   const isLocal = url.origin === location.origin;
+
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request, {
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-store',
+          'Pragma': 'no-cache',
+        },
+      }).catch(() => caches.match(event.request))
+    );
+    return;  // important: stop processing other handlers
+  }
+
+  if (event.request.destination === 'document') {
+    // Always go to network for HTML
+    event.respondWith(
+      fetch(event.request, { cache: 'no-cache' })
+        .catch(() => caches.match(event.request))
+    );
+  }
 
   if (event.request.destination === 'image') {
 
@@ -79,6 +116,10 @@ self.addEventListener('fetch', (event) => {
 });
 
 self.addEventListener('message', event => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+
   if (event.data.type === 'CACHE_AVATAR' && typeof event.data.url === 'string') {
     const url = event.data.url;
 
