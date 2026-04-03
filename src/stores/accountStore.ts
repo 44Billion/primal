@@ -474,10 +474,6 @@ export const initAccountStore: AccountStore = {
           success: () => {
             clearTimeout(timeout);
             resolve();
-          },
-          fail: () => {
-            clearTimeout(timeout);
-            resolve();
           }
         });
       });

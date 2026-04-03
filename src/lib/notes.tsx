@@ -827,7 +827,7 @@ export const sendSignedEvent = (event: NostrRelaySignedEvent, callbacks?: { succ
 
       if (type === 'EVENT_NOT_SENT' && rEvent.id === event.id) {
         updateAccountStore('sendErrors', () => ({ [rEvent.id]: `${reason}` }));
-        callbacks.fail?.(rEvent);
+        callbacks.success?.(rEvent);
         relayWorker.removeEventListener('message', onSuccess);
         return;
       }

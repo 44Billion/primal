@@ -117,15 +117,19 @@ self.addEventListener('message', (e: MessageEvent<WorkerMessageType>) => {
       self.postMessage({ type: 'DEQUE_EVENT', event });
     }).catch(reason => {
       if (reason instanceof AggregateError) {
-        const hasNewerEvents = reason.errors.find(e => e.message === "replaced: have newer event");
+        console.log('Failed to publish the event: ', reason);
 
-        if (hasNewerEvents) {
-          self.postMessage({ type: 'DEQUE_EVENT', event });
+        const shouldRetry = reason.errors.some(e => e.message.startsWith('rate-limited:') || e.message.startsWith('error:'));
+
+        if (shouldRetry) {
+          self.postMessage({ type: 'EVENT_NOT_SENT', success: false, event, reason: reason.errors[0].message || '' });
           return;
         }
+
+        self.postMessage({ type: 'DEQUE_EVENT', event });
+        return;
       }
 
-      console.log('Failed to publish the event: ', reason);
       self.postMessage({ type: 'EVENT_NOT_SENT', success: false, event, reason });
     })
   }
