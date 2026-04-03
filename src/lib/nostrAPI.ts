@@ -133,7 +133,8 @@ export const timeoutPromise = (timeout = 8_000) => {
   });
 }
 
-export const handleSignerFailure = (reason: any) => {
+export const handleSignerFailure = (reason: any, tempId: string) => {
+  updateAccountStore('sendErrors', () => ({ [tempId]: `${reason}` }));
   if (reason === 'promise_timeout' && accountStore.loginType === 'nip46') {
     openSignerUnreachableDialog({
       title: 'Remote signer unreachable',
@@ -153,7 +154,7 @@ export const handleSignerFailure = (reason: any) => {
 
   // if (reason === 'promise_timeout' && accountStore.loginType === 'extension') {
   //   openConfirmDialog({
-  //     title: 'Cant find a nostr extension',
+  //     title: 'Can\'t find a nostr extension',
   //     description: 'Primal was unable to find an active nostr extension. Please make sure an extension is available and active',
   //     confirmLabel: 'Retry',
   //     onConfirm: () => {
@@ -210,8 +211,7 @@ export const signEvent = async (e: NostrRelayEvent) => {
       throw(reason);
     }
     enqueUnsignedEvent(unwrap(event), tempId);
-    isDev() && updateAccountStore('sendErrors', () => ({ [tempId]: `${reason}` }));
-    handleSignerFailure(reason);
+    handleSignerFailure(reason, tempId);
     throw(reason);
   }
 };
@@ -225,7 +225,7 @@ export const getPublicKey = async () => {
           timeoutPromise(),
         ]) as string;
       } catch(reason) {
-        handleSignerFailure(reason);
+        handleSignerFailure(reason, 'getPublicKey');
         throw(reason);
       }
     });
@@ -243,7 +243,7 @@ export const getRelays = async () => {
           timeoutPromise(),
         ]) as NostrRelays;
       } catch(reason) {
-        handleSignerFailure(reason);
+        handleSignerFailure(reason, 'getRelays');
         throw(reason);
       }
     });
@@ -261,7 +261,7 @@ export const encrypt = async (pubkey: string, message: string) => {
           timeoutPromise(),
         ]) as string;
       } catch(reason) {
-        handleSignerFailure(reason);
+        handleSignerFailure(reason, 'encrypt');
         throw(reason);
       }
     });
@@ -279,7 +279,7 @@ export const decrypt = async (pubkey: string, message: string) => {
           timeoutPromise(),
         ]) as string;
       } catch(reason) {
-        handleSignerFailure(reason);
+        handleSignerFailure(reason, 'decrypt');
         throw(reason);
       }
     });
@@ -298,7 +298,7 @@ export const encrypt44 = async (pubkey: string, message: string) => {
           timeoutPromise(),
         ]) as string;
       } catch(reason) {
-        handleSignerFailure(reason);
+        handleSignerFailure(reason, 'encrypt44');
         throw(reason);
       }
     });
@@ -316,7 +316,7 @@ export const decrypt44 = async (pubkey: string, message: string) => {
           timeoutPromise(),
         ]) as string;
       } catch(reason) {
-        handleSignerFailure(reason);
+        handleSignerFailure(reason, 'decrypt44');
         throw(reason);
       }
     });
@@ -334,7 +334,7 @@ export const enableWebLn = async () => {
           timeoutPromise(),
         ]) as void;
       } catch(reason) {
-        handleSignerFailure(reason);
+        handleSignerFailure(reason, 'webln');
         throw(reason);
       }
     });
@@ -352,7 +352,7 @@ export const sendPayment = async (paymentRequest: string) => {
           timeoutPromise(),
         ]) as SendPaymentResponse;
       } catch(reason) {
-        handleSignerFailure(reason);
+        handleSignerFailure(reason, 'sendPayment');
         throw(reason);
       }
     });
