@@ -434,10 +434,13 @@ export const initAccountStore: AccountStore = {
 
   export const refreshQueue = async () => {
     const pubkey = accountStore.publicKey;
+    console.log('REFRESH PUBKEY: ', pubkey);
     if (!pubkey) return;
     clearInterval(countdownInterval);
 
     let queue = unwrap(accountStore.eventQueue);
+
+    console.log('REFRESH QUEUE: ', queue);
 
     if (queue.length === 0) {
       // clearTimeout(monitorInterval);
@@ -446,6 +449,7 @@ export const initAccountStore: AccountStore = {
 
     const processedEvents = await processArrayUntilFailure<NostrRelaySignedEvent>([...queue], (item) => {
       return new Promise<void>(async (resolve, reject) => {
+        console.log('REFRESH PROCESSING: ', item)
         if (!item.sig) {
           try {
             const event = await signEvent(item);
@@ -454,21 +458,31 @@ export const initAccountStore: AccountStore = {
               item = { ...event };
             }
           } catch (reason) {
-            reject('relay_send_timeout');
+            console.log('REFRESH SIGN TIMEOUT: ', reason)
+            reject('relay_sign_timeout');
             return;
           }
         }
 
         let timeout = setTimeout(
-          () => reject('relay_send_timeout'),
+          () => {
+            console.log('REFRESH SEND TIMEOUT')
+            reject('relay_send_timeout')
+          },
           8_000,
         );
-
+        console.log('REFRESH SEND: ', item.id)
         sendSignedEvent(item, {
           success: () => {
+            console.log('REFRESH SEND DONE: ', item.id)
             clearTimeout(timeout);
             resolve();
           },
+          fail: () => {
+            console.log('REFRESH SEND FAILED: ', item.id);
+            clearTimeout(timeout);
+            resolve();
+          }
         });
       });
     });

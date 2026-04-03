@@ -10,7 +10,7 @@ import { getMediaUrl as getMediaUrlDefault } from "./media";
 import { encrypt44, signEvent } from "./nostrAPI";
 import { ArticleEdit } from "../pages/ReadsEditor";
 import { APP_ID, relayWorker } from "../App";
-import { accountStore, dequeEvent, enqueEvent } from "../stores/accountStore";
+import { accountStore, dequeEvent, enqueEvent, updateAccountStore } from "../stores/accountStore";
 import { DecodedNaddr } from "nostr-tools/lib/types/nip19";
 import { emptyMegaFeedPage, emptyMegaFeedResults, FeedPaging, MegaFeedResults, pageResolve, updateFeedPage } from "../megaFeeds";
 import { parseBolt11 } from "../utils";
@@ -816,11 +816,18 @@ export const sendSignedEvent = (event: NostrRelaySignedEvent, callbacks?: { succ
   ];
 
   if (callbacks) {
-    const onSuccess = (e: MessageEvent<{ type: string, event: NostrRelaySignedEvent }>) => {
-      const { type, event: rEvent } = e.data;
+    const onSuccess = (e: MessageEvent<{ type: string, event: NostrRelaySignedEvent, reason?: any }>) => {
+      const { type, event: rEvent, reason } = e.data;
 
       if (type === 'EVENT_SENT' && rEvent.id === event.id) {
         callbacks.success?.(rEvent);
+        relayWorker.removeEventListener('message', onSuccess);
+        return;
+      }
+
+      if (type === 'EVENT_NOT_SENT' && rEvent.id === event.id) {
+        updateAccountStore('sendErrors', () => ({ [rEvent.id]: `${reason}` }));
+        callbacks.fail?.(rEvent);
         relayWorker.removeEventListener('message', onSuccess);
         return;
       }

@@ -78,7 +78,10 @@ const App: Component = () => {
   }
 
   createEffect(on(() => accountStore.eventQueueRetry, (countdown) => {
+    console.log('COUNTDOWN: ', countdown)
     if (countdown > 0) return;
+
+    console.log('REFRESH')
 
     refreshQueue();
   }));

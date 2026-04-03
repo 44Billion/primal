@@ -29,10 +29,6 @@ self.addEventListener('message', (e: MessageEvent<WorkerMessageType>) => {
         relayPool.ensureRelay(url).then(r => self.postMessage({ type: 'RELAY_OPENED', relay: r.url }));
       } catch (e) {
         console.log('FAILED TO OPEN RELAY: ', e);
-        // setTimeout(() => {
-        //   console.log('SECOND RELAY OPEN ATTEMPT: ', url);
-        //   relayPool?.ensureRelay(url).then(r => self.postMessage({ type: 'RELAY_OPENED', relay: r.url }));
-        // }, 500)
       }
     }
   }
@@ -122,9 +118,9 @@ self.addEventListener('message', (e: MessageEvent<WorkerMessageType>) => {
         self.postMessage({ type: 'DEQUE_EVENT', event });
       })
     }
-    catch (e) {
-      console.log('Failed to publish the event: ', e);
-      self.postMessage({ success: false, note: event });
+    catch (reason) {
+      console.log('Failed to publish the event: ', reason);
+      self.postMessage({ type: 'EVENT_NOT_SENT', success: false, event, reason });
     }
   }
 });

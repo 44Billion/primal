@@ -267,6 +267,10 @@ const EventQueuePage: Component = () => {
             clearTimeout(timeout);
             resolve();
           },
+          fail: () => {
+            clearTimeout(timeout);
+            resolve();
+          }
         });
       });
     });
