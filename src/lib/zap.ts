@@ -94,7 +94,12 @@ export const zapNote = async (
 
     const event = encodeURIComponent(JSON.stringify(signedEvent));
 
-    const r2 = await (await fetch(`${callback}?amount=${sats}&nostr=${event}`)).json();
+    const url = new URL(callback);
+    url.searchParams.set('amount', String(sats));
+    url.searchParams.set('nostr', event);
+
+    const r2 = await (await fetch(url.toString())).json();
+
     const pr = r2.pr;
 
     if (nwc && nwc[1] && nwc[1].length > 0) {
@@ -156,7 +161,11 @@ export const zapArticle = async (
 
     const event = encodeURIComponent(JSON.stringify(signedEvent));
 
-    const r2 = await (await fetch(`${callback}?amount=${sats}&nostr=${event}`)).json();
+    const url = new URL(callback);
+    url.searchParams.set('amount', String(sats));
+    url.searchParams.set('nostr', event);
+
+    const r2 = await (await fetch(url.toString())).json();
     const pr = r2.pr;
 
     if (nwc && nwc[1] && nwc[1].length > 0) {
@@ -210,7 +219,12 @@ export const zapProfile = async (
 
     const event = encodeURIComponent(JSON.stringify(signedEvent));
 
-    const r2 = await (await fetch(`${callback}?amount=${sats}&nostr=${event}`)).json();
+    const url = new URL(callback);
+    url.searchParams.set('amount', String(sats));
+    url.searchParams.set('nostr', event);
+
+    const r2 = await (await fetch(url.toString())).json();
+
     const pr = r2.pr;
 
     if (nwc && nwc[1] && nwc[1].length > 0) {
@@ -282,7 +296,11 @@ export const zapSubscription = async (
 
     const event = encodeURIComponent(JSON.stringify(signedEvent));
 
-    const r2 = await (await fetch(`${callback}?amount=${sats}&nostr=${event}`)).json();
+    const url = new URL(callback);
+    url.searchParams.set('amount', String(sats));
+    url.searchParams.set('nostr', event);
+
+    const r2 = await (await fetch(url.toString())).json();
     const pr = r2.pr;
 
     if (nwc && nwc[1] && nwc[1].length > 0) {
@@ -345,7 +363,11 @@ export const zapDVM = async (
 
     const event = encodeURIComponent(JSON.stringify(signedEvent));
 
-    const r2 = await (await fetch(`${callback}?amount=${sats}&nostr=${event}`)).json();
+    const url = new URL(callback);
+    url.searchParams.set('amount', String(sats));
+    url.searchParams.set('nostr', event);
+
+    const r2 = await (await fetch(url.toString())).json();
     const pr = r2.pr;
 
     if (nwc && nwc[1] && nwc[1].length > 0) {
@@ -408,7 +430,11 @@ export const zapStream = async (
 
     const event = encodeURIComponent(JSON.stringify(signedEvent));
 
-    const r2 = await (await fetch(`${callback}?amount=${sats}&nostr=${event}`)).json();
+    const url = new URL(callback);
+    url.searchParams.set('amount', String(sats));
+    url.searchParams.set('nostr', event);
+
+    const r2 = await (await fetch(url.toString())).json();
     const pr = r2.pr;
 
     if (nwc && nwc[1] && nwc[1].length > 0) {
@@ -536,7 +562,11 @@ export const zapVote = async (
 
     const event = encodeURIComponent(JSON.stringify(signedEvent));
 
-    const r2 = await (await fetch(`${callback}?amount=${sats}&nostr=${event}`)).json();
+    const url = new URL(callback);
+    url.searchParams.set('amount', String(sats));
+    url.searchParams.set('nostr', event);
+
+    const r2 = await (await fetch(url.toString())).json();
     const pr = r2.pr;
 
     if (nwc && nwc[1] && nwc[1].length > 0) {
