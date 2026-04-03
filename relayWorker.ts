@@ -112,15 +112,21 @@ self.addEventListener('message', (e: MessageEvent<WorkerMessageType>) => {
       }
     )
 
-    try {
-      Promise.any(relayPool.publish(relays, event)).then(() => {
-        self.postMessage({ type: 'EVENT_SENT', event });
-        self.postMessage({ type: 'DEQUE_EVENT', event });
-      })
-    }
-    catch (reason) {
+    Promise.any(relayPool.publish(relays, event)).then(() => {
+      self.postMessage({ type: 'EVENT_SENT', event });
+      self.postMessage({ type: 'DEQUE_EVENT', event });
+    }).catch(reason => {
+      if (reason instanceof AggregateError) {
+        const hasNewerEvents = reason.errors.find(e => e.message === "replaced: have newer event");
+
+        if (hasNewerEvents) {
+          self.postMessage({ type: 'DEQUE_EVENT', event });
+          return;
+        }
+      }
+
       console.log('Failed to publish the event: ', reason);
       self.postMessage({ type: 'EVENT_NOT_SENT', success: false, event, reason });
-    }
+    })
   }
 });
