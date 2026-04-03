@@ -38,7 +38,7 @@ const UpdateAvailableDialog: Component<{
         <div
           class={styles.description}
         >
-          A new version of Primal Studio is ready
+          A new version of <br/>Primal Web is ready
         </div>
         <button
           onClick={() => {
