@@ -340,6 +340,11 @@ const EventQueuePage: Component = () => {
       </StickySidebar>
 
       <div>
+        <Show when={accountStore.signerTimeout}>
+          <div class={styles.extensionWarning}>
+            Nostr extension is not responding.
+          </div>
+        </Show>
         <div class={styles.eventQueueHeader}>
           <Show
             when={accountStore.eventQueue.length > 0}

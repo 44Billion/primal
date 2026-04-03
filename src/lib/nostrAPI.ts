@@ -134,7 +134,7 @@ export const timeoutPromise = (timeout = 8_000) => {
 }
 
 export const handleSignerFailure = (reason: any, tempId: string) => {
-  updateAccountStore('sendErrors', () => ({ [tempId]: `${reason}` }));
+  isDev() && updateAccountStore('sendErrors', () => ({ [tempId]: `${reason}` }));
   if (reason === 'promise_timeout' && accountStore.loginType === 'nip46') {
     openSignerUnreachableDialog({
       title: 'Remote signer unreachable',
@@ -150,6 +150,10 @@ export const handleSignerFailure = (reason: any, tempId: string) => {
         closeSignerUnreachableDialog();
       }
     });
+  }
+
+  if (reason === 'promise_timeout' && accountStore.loginType === 'extension') {
+    updateAccountStore('signerTimeout', true);
   }
 
   // if (reason === 'promise_timeout' && accountStore.loginType === 'extension') {
@@ -197,6 +201,7 @@ export const signEvent = async (e: NostrRelayEvent) => {
         ]) as NostrRelaySignedEvent;
         // const signed = await nostr.signEvent(event);
 
+        updateAccountStore('signerTimeout', false);
         dequeUnsignedEvent(unwrap(event), tempId);
         return signed;
       } catch(reason) {
@@ -220,10 +225,14 @@ export const getPublicKey = async () => {
   try {
     return await enqueueNostr<string>(async (nostr) => {
       try {
-        return await Promise.race([
+        const pubkey = await Promise.race([
           nostr.getPublicKey(),
           timeoutPromise(),
         ]) as string;
+
+        updateAccountStore('signerTimeout', false);
+        return pubkey;
+
       } catch(reason) {
         handleSignerFailure(reason, 'getPublicKey');
         throw(reason);
@@ -238,10 +247,13 @@ export const getRelays = async () => {
   try {
     return await enqueueNostr<NostrRelays>(async (nostr) => {
       try {
-        return await Promise.race([
+        const relays = await Promise.race([
           nostr.getRelays(),
           timeoutPromise(),
         ]) as NostrRelays;
+
+        updateAccountStore('signerTimeout', false);
+        return relays;
       } catch(reason) {
         handleSignerFailure(reason, 'getRelays');
         throw(reason);
@@ -256,10 +268,13 @@ export const encrypt = async (pubkey: string, message: string) => {
   try {
     return await enqueueNostr<string>(async (nostr) => {
       try {
-        return await Promise.race([
+        const enc = await Promise.race([
           nostr.nip04.encrypt(pubkey, message),
           timeoutPromise(),
         ]) as string;
+
+        updateAccountStore('signerTimeout', false);
+        return enc;
       } catch(reason) {
         handleSignerFailure(reason, 'encrypt');
         throw(reason);
@@ -274,10 +289,13 @@ export const decrypt = async (pubkey: string, message: string) => {
   try {
     return await enqueueNostr<string>(async (nostr) => {
       try {
-        return await Promise.race([
+        const dec = await Promise.race([
           nostr.nip04.decrypt(pubkey, message),
           timeoutPromise(),
         ]) as string;
+
+        updateAccountStore('signerTimeout', false);
+        return dec;
       } catch(reason) {
         handleSignerFailure(reason, 'decrypt');
         throw(reason);
@@ -293,10 +311,13 @@ export const encrypt44 = async (pubkey: string, message: string) => {
   try {
     return await enqueueNostr<string>(async (nostr) => {
       try {
-        return await Promise.race([
+        const enc = await Promise.race([
           nostr.nip44.encrypt(pubkey, message),
           timeoutPromise(),
         ]) as string;
+
+        updateAccountStore('signerTimeout', false);
+        return enc;
       } catch(reason) {
         handleSignerFailure(reason, 'encrypt44');
         throw(reason);
@@ -311,10 +332,13 @@ export const decrypt44 = async (pubkey: string, message: string) => {
   try {
     return await enqueueNostr<string>(async (nostr) => {
       try {
-        return await Promise.race([
+        const dec = await Promise.race([
           nostr.nip44.decrypt(pubkey, message),
           timeoutPromise(),
         ]) as string;
+
+        updateAccountStore('signerTimeout', false);
+        return dec;
       } catch(reason) {
         handleSignerFailure(reason, 'decrypt44');
         throw(reason);
@@ -329,10 +353,14 @@ export const enableWebLn = async () => {
   try {
     return await enqueueWebLn<void>(async (webln) => {
      try {
-        return await Promise.race([
+        await Promise.race([
           webln.enable(),
           timeoutPromise(),
         ]) as void;
+
+        updateAccountStore('signerTimeout', false);
+
+        return;
       } catch(reason) {
         handleSignerFailure(reason, 'webln');
         throw(reason);
@@ -347,10 +375,13 @@ export const sendPayment = async (paymentRequest: string) => {
   try {
     return await enqueueWebLn<SendPaymentResponse>(async (webln) => {
       try {
-        return await Promise.race([
+        const pay = await Promise.race([
           webln.sendPayment(paymentRequest),
           timeoutPromise(),
         ]) as SendPaymentResponse;
+
+        updateAccountStore('signerTimeout', false);
+        return pay;
       } catch(reason) {
         handleSignerFailure(reason, 'sendPayment');
         throw(reason);
