@@ -36,3 +36,31 @@
     line-height: 12px;
   }
 }
+
+@media only screen and (max-width: 1300px) {
+  .updateAvailable {
+    width: 36px;
+    padding: 0;
+    border-radius: 99px;
+    background-color: var(--subtile-devider);
+    margin-left: 2px;
+
+    &:hover {
+      background-color: var(--text-tertiary);
+    }
+
+    .description {
+      display: none;
+    }
+
+    button {
+      width: 36px;
+      height: 36px;
+      display: inline-block;
+      margin: 0px 0px;
+      background-color: var(--text-primary);
+      -webkit-mask: url(../../assets/icons/feed_repost.svg) no-repeat center;
+      mask: url(../../assets/icons/feed_repost.svg) no-repeat center;
+    }
+  }
+}

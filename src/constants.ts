@@ -15,6 +15,7 @@ export const emptyPage: FeedPage = {
   noteActions: {},
   topZaps: {},
   streams: [],
+  pollResults: {},
 }
 
 export const nostrHighlights ='9a500dccc084a138330a1d1b2be0d5e86394624325d25084d3eca164e7ea698a';
