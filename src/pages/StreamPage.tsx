@@ -41,6 +41,7 @@ import TopZapModal from '../components/TopZapsModal/TopZapModal';
 import Paginator from '../components/Paginator/Paginator';
 import { hashtagCharsRegex, Kind } from '../constants';
 import { accountStore, addToStreamMuteList, hasPublicKey, removeFromStreamMuteList, setShowPin, showGetStarted, showMissingNWC } from '../stores/accountStore';
+import { useMediaContext } from '../contexts/MediaContext';
 
 const CHAT_PAGE_SIZE = 25;
 
@@ -52,6 +53,7 @@ const StreamPage: Component = () => {
   const intl = useIntl();
   const app = useAppContext();
   const settings = useSettingsContext();
+  const media = useMediaContext();
 
   const [queryParams, setQueryParams] = useSearchParams();
 
@@ -118,21 +120,16 @@ const StreamPage: Component = () => {
     return;
   }
 
-  const host = () => {
-    const hostPubkey = streamData.hosts?.[0];
-    if (hostPubkey && people.length > 0) {
-      const host = people.find(p => p.pubkey == hostPubkey) || emptyUser(hostPubkey);
-      if (host) return host;
-    }
+  createEffect(() => {
+    const hostPubkey = streamData.hosts?.[0] || streamData.pubkey;
 
-    const eventPubkey = streamData.pubkey;
-    if (eventPubkey && people.length > 0) {
-      const host = people.find(p => p.pubkey == streamData.pubkey) || emptyUser(eventPubkey);
-      if (host) return host;
-    }
+    if (!hostPubkey) return;
 
-    return undefined;
-  }
+    fetchHostUser(hostPubkey)
+
+  });
+
+  const [host, setHost] = createSignal<PrimalUser>();
 
   createEffect(() => {
     resolveHex(params.vanityName)
@@ -243,6 +240,15 @@ const StreamPage: Component = () => {
     setFetchingPeople(false);
 
     return true;
+  }
+
+  const fetchHostUser = async (pubkey: string) => {
+    const subId = `fetch_host_user_${APP_ID}`;
+
+    const { users } = await fetchPeople([pubkey], subId);
+
+    setHost(() => users[0]);
+    // setPeople((peps) => [ ...peps, ...users]);
   }
 
   let fetchedPubkeys: string[] = [];
@@ -469,6 +475,12 @@ const StreamPage: Component = () => {
 
   createEffect(on(getHex, (pubkey) => {
     const stremId = streamId();
+
+    const stream = media?.actions.getStreamByIdentifier(stremId);
+
+    if (stream) {
+      setStreamData(stream);
+    }
 
     stremId && resolveStreamingData(stremId, pubkey);
   }));
@@ -1093,7 +1105,6 @@ const StreamPage: Component = () => {
         </div>
 
 
-        <Show when={initialLoadDone()}>
           <div class={styles.streamInfo}>
             <div class={styles.title}>{streamData.title}</div>
             <div class={styles.statsRibbon}>
@@ -1125,35 +1136,41 @@ const StreamPage: Component = () => {
               </Show>
             </div>
 
-            <div class={`${styles.topZaps} ${topZaps.length === 0 ? styles.centered : ''}`}>
-              <div class={`${styles.zapList} ${topZaps.length === 0 ? styles.emptyZaps : ''}`}>
-                <div class={styles.firstZap}>
-                  {renderFirstZap()}
-                </div>
-                <Show when={topZaps.length > 0}>
-                  <div class={styles.other}>
-                    {renderRestZaps()}
+            <Show
+              when={initialLoadDone()}
+              fallback={<div class={styles.zapsSkeleton}><div></div></div>}
+            >
+              <div class={`${styles.topZaps} ${topZaps.length === 0 ? styles.centered : ''}`}>
+                <div class={`${styles.zapList} ${topZaps.length === 0 ? styles.emptyZaps : ''}`}>
+                  <div class={styles.firstZap}>
+                    {renderFirstZap()}
                   </div>
-                </Show>
-              </div>
-              <div class={`${styles.zapStats} ${topZaps.length === 0 ? styles.centeredZaps : ''}`}>
-                <div class={`${styles.statsLine} ${topZaps.length === 0 ? styles.noStatsLine : ''}`}>
-                  <div class={styles.totalZaps}>Total {totalZaps()} zaps:</div>
-                  <div class={styles.totalSats}>
+                  <Show when={topZaps.length > 0}>
+                    <div class={styles.other}>
+                      {renderRestZaps()}
+                    </div>
+                  </Show>
+                </div>
+                <div class={`${styles.zapStats} ${topZaps.length === 0 ? styles.centeredZaps : ''}`}>
+                  <div class={`${styles.statsLine} ${topZaps.length === 0 ? styles.noStatsLine : ''}`}>
+                    <div class={styles.totalZaps}>Total {totalZaps()} zaps:</div>
+                    <div class={styles.totalSats}>
+                      <div class={styles.zapIcon}></div>
+                      {humanizeNumber(totalSats(), false)}
+                    </div>
+                  </div>
+                  <button
+                    class={styles.zapButton}
+                    onMouseDown={startZap}
+                    onMouseUp={commitZap}
+                  >
                     <div class={styles.zapIcon}></div>
-                    {humanizeNumber(totalSats(), false)}
-                  </div>
+                    {topZaps.length > 0 ? 'Zap Now' : 'Be the first to zap this stream!'}
+                  </button>
                 </div>
-                <button
-                  class={styles.zapButton}
-                  onMouseDown={startZap}
-                  onMouseUp={commitZap}
-                >
-                  <div class={styles.zapIcon}></div>
-                  {topZaps.length > 0 ? 'Zap Now' : 'Be the first to zap this stream!'}
-                </button>
               </div>
-            </div>
+
+            </Show>
 
             <div class={styles.summary}>
               {parseSummary(streamData.summary || '')}
@@ -1202,7 +1219,6 @@ const StreamPage: Component = () => {
               </div>
             </Show>
           </div>
-        </Show>
       </div>
 
       <div class={`${styles.liveSidebar} ${!showLiveChat() ? styles.hidden : ''}`}>
@@ -1278,7 +1294,14 @@ const StreamPage: Component = () => {
         </div>
 
         <div class={styles.chatMessages}>
-          <Show when={initialLoadDone()}>
+          <Show
+            when={initialLoadDone()}
+            fallback={<div class={styles.chatSkeletons}>
+              <For each={new Array(20)}>
+                {() => <div style={`height: ${38 + Math.floor(Math.random() * 42)}px`}></div>}
+              </For>
+            </div>}
+          >
             <For each={events.slice(0, chatMessageLimit())}>
               {event => renderEvent(event)}
             </For>

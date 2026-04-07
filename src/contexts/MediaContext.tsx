@@ -36,7 +36,8 @@ export type MediaContextStore = {
     getMediaUrl: (url: string | undefined, size?: MediaSize, animated?: boolean) => string | undefined,
     addVideo: (video: HTMLVideoElement | undefined) => void,
     getThumbnail: (url: string | undefined) => string | undefined,
-    getStream: (pubkey: string, onlyLive?: boolean) => StreamingData,
+    getStream: (pubkey: string, onlyLive?: boolean) => StreamingData | undefined,
+    getStreamByIdentifier: (identifier: string) => StreamingData | undefined,
     isStreaming: (pubkey: string) => boolean,
     removeAutoplayVideo: (videoId: string) => void,
     findHLS: (url: string) => string,
@@ -130,10 +131,16 @@ export const MediaProvider = (props: { children: JSXElement }) => {
   }
 
   const getStream = (pubkey: string, onlyLive?: boolean) => {
-    let ret = store.liveEvents.find((s: StreamingData) => s.hosts?.[0] === pubkey && (onlyLive ? s.status === 'live' : true));
+    const le = (store.liveEvents as StreamingData[]);
+    let ret = le.find((s: StreamingData) => s.hosts?.[0] === pubkey && (onlyLive ? s.status === 'live' : true));
 
-    if (!ret) return store.liveEvents.find((s: StreamingData) => s.pubkey === pubkey && (onlyLive ? s.status === 'live' : true));
+    if (!ret) return le.find((s: StreamingData) => s.pubkey === pubkey && (onlyLive ? s.status === 'live' : true));
 
+    return ret;
+  }
+
+  const getStreamByIdentifier = (identifier: string): Liv => {
+    let ret = (store.liveEvents as StreamingData[]).find((s: StreamingData) => s.id === identifier);
     return ret;
   }
 
@@ -304,6 +311,7 @@ export const MediaProvider = (props: { children: JSXElement }) => {
       addVideo,
       getThumbnail,
       getStream,
+      getStreamByIdentifier,
       isStreaming,
       removeAutoplayVideo,
       findHLS,
