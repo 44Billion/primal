@@ -126,6 +126,7 @@ self.addEventListener('message', (e: MessageEvent<WorkerMessageType>) => {
           return;
         }
 
+        self.postMessage({ type: 'EVENT_SENT', event });
         self.postMessage({ type: 'DEQUE_EVENT', event });
         return;
       }
