@@ -434,11 +434,11 @@ export const proxyEvent = async (event: NostrRelaySignedEvent, relays: Relay[], 
     return [...acc];
   }, []);
 
-  let userRelays: Relay[] = relaySettings ?
-    relays.filter((relay) => (relaySettings[relay.url] || { read: true, write: true }).write) :
-    [...relays];
+  const relayUrls = Object.keys(relaySettings || {});
 
-  const publishRelays = new Set<string>([ ...userRelays.map(r => r.url), ...hintRelayUrls]);
+  let userRelays: Relay[] = relayUrls.filter(url => relaySettings?.[url].write);
+
+  const publishRelays = new Set<string>([ ...userRelays, ...hintRelayUrls]);
 
   const promise = new Promise<boolean>((resolve, reject) => {
     if (!event) {
