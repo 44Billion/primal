@@ -1,4 +1,4 @@
-import { batch, Component, createMemo, JSXElement, Show } from 'solid-js';
+import { batch, Component, createEffect, createMemo, JSXElement, on, Show } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import { CustomZapInfo, useAppContext } from '../../contexts/AppContext';
 import { useThreadContext } from '../../contexts/ThreadContext';
@@ -47,7 +47,7 @@ const EmbeddedNote: Component<EmbeddedNoteProps> = (props) => {
 
   let noteContent: HTMLDivElement | undefined;
 
-  const [reactionsState, updateReactionsState] = createStore<NoteReactionsState>({
+  const initReactionState = () => ({
     likes: props.note?.post.likes || 0,
     liked: props.note?.post.noteActions?.liked || false,
     reposts: props.note?.post.reposts || 0,
@@ -68,6 +68,21 @@ const EmbeddedNote: Component<EmbeddedNoteProps> = (props) => {
     topZapsFeed: [],
     quoteCount: 0,
   });
+
+  const [reactionsState, updateReactionsState] = createStore<NoteReactionsState>(
+    initReactionState()
+  );
+
+  createEffect(on(() => accountStore.resetReactionStates, (reset) => {
+    if (!reset) return;
+
+    updateReactionsState({
+      liked: false,
+      reposted: false,
+      replied: false,
+      zapped: false,
+    });
+  }))
 
   // @ts-ignore
   const noteId = () => {

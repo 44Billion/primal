@@ -1,5 +1,5 @@
 import { A } from "@solidjs/router";
-import { Component, createEffect, createSignal, For, Show } from "solid-js";
+import { Component, createEffect, createSignal, For, on, Show } from "solid-js";
 import { createStore } from "solid-js/store";
 import { eventAddresRegex } from "../../constants";
 
@@ -19,6 +19,7 @@ import NoteContextTrigger from "../../components/Note/NoteContextTrigger";
 import { CustomZapInfo, useAppContext } from "../../contexts/AppContext";
 import ArticleFooter from "../../components/Note/NoteFooter/ArticleFooter";
 import { useMediaContext } from "../../contexts/MediaContext";
+import { accountStore } from "../../stores/accountStore";
 
 export type LongFormData = {
   title: string,
@@ -64,7 +65,7 @@ const ReadsEditorPreview: Component< {
 
   let articleContextMenu: HTMLDivElement | undefined;
 
-  const [reactionsState, updateReactionsState] = createStore<NoteReactionsState>({
+  const initReactionState = () => ({
     likes: props.article?.likes || 0,
     liked: false,
     reposts: props.article?.reposts || 0,
@@ -85,6 +86,21 @@ const ReadsEditorPreview: Component< {
     topZapsFeed: [],
     quoteCount: 0,
   });
+
+  const [reactionsState, updateReactionsState] = createStore<NoteReactionsState>(
+    initReactionState()
+  );
+
+  createEffect(on(() => accountStore.resetReactionStates, (reset) => {
+    if (!reset) return;
+
+    updateReactionsState({
+      liked: false,
+      reposted: false,
+      replied: false,
+      zapped: false,
+    });
+  }))
 
   const lightbox = new PhotoSwipeLightbox({
     gallery: `#read_${naddr()}`,
@@ -196,7 +212,7 @@ const ReadsEditorPreview: Component< {
               <NoteImage
                 class={`${styles.image} hero_image_${naddr()}`}
                 src={props.article?.image}
-                altSc={props.article?.image}
+                altSrc={props.article?.image}
                 mediaThumb={articleMediaThumb()}
                 width={640}
                 authorPk={props.article?.pubkey}

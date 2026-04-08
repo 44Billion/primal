@@ -195,6 +195,8 @@ export type AccountStore = {
 
   showSignerUnreachableDialog: boolean,
   signerUnreachableDialogInfo: ConfirmDialogInfo | undefined,
+
+  resetReactionStates: boolean,
 }
 
 let relaysExplicitlyClosed: string[] = [];
@@ -266,6 +268,7 @@ export const initAccountStore: AccountStore = {
 
   showSignerUnreachableDialog: false,
   signerUnreachableDialogInfo: undefined,
+  resetReactionStates: false,
   // @ts-ignore
   // relayPool: new SimplePool({ enablePing: true, enableReconnect: true }),
 };
@@ -652,6 +655,11 @@ export const initAccountStore: AccountStore = {
     clearNWC();
 
     setLoginType('guest');
+
+    updateAccountStore('resetReactionStates', true);
+    setTimeout(() => {
+      updateAccountStore('resetReactionStates', false);
+    }, 10);
   };
 
   export const setSec = (sec: string | undefined, force?: boolean) => {

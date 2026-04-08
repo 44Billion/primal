@@ -1,4 +1,4 @@
-import { Component, createSignal, Show } from 'solid-js';
+import { Component, createEffect, createSignal, on, Show } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import { useAppContext } from '../../contexts/AppContext';
 import { useMediaContext } from '../../contexts/MediaContext';
@@ -33,8 +33,7 @@ const ArticleOverview: Component<ArticleProps> = (props) => {
 
   let articleContextMenu: HTMLDivElement | undefined;
 
-
-  const [reactionsState, updateReactionsState] = createStore<NoteReactionsState>({
+  const initReactionState = () => ({
     bookmarks: props.article.bookmarks || 0,
     likes: props.article.likes || 0,
     liked: props.article.noteActions?.liked || false,
@@ -56,6 +55,21 @@ const ArticleOverview: Component<ArticleProps> = (props) => {
     topZapsFeed: [],
     quoteCount: 0,
   });
+
+  const [reactionsState, updateReactionsState] = createStore<NoteReactionsState>(
+    initReactionState()
+  );
+
+  createEffect(on(() => accountStore.resetReactionStates, (reset) => {
+    if (!reset) return;
+
+    updateReactionsState({
+      liked: false,
+      reposted: false,
+      replied: false,
+      zapped: false,
+    });
+  }))
 
   const openReactionModal = (openOn = 'likes') =>  {
     app?.actions.openReactionModal(props.article.naddr, {

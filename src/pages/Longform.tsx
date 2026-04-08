@@ -101,6 +101,7 @@ const emptyStore: LongformThreadStore = {
     noteActions: {},
     topZaps: {},
     wordCount: {},
+    pollResults: {},
   },
   users: [],
   isFetching: false,
@@ -115,6 +116,7 @@ const emptyStore: LongformThreadStore = {
     noteActions: {},
     topZaps: {},
     wordCount: {},
+    pollResults: {},
   },
   heightlightReplies: [],
   selectedHighlight: undefined,
@@ -162,7 +164,7 @@ const Longform: Component< { naddr: string } > = (props) => {
     updateReactionsState(() => ({ likes, reposts, replies, zapCount: zaps, satsZapped: satszapped }));
   })
 
-  const [reactionsState, updateReactionsState] = createStore<NoteReactionsState>({
+  const initReactionState = () => ({
     likes: store.article?.likes || 0,
     liked: false,
     reposts: store.article?.reposts || 0,
@@ -183,6 +185,21 @@ const Longform: Component< { naddr: string } > = (props) => {
     topZapsFeed: [],
     quoteCount: 0,
   });
+
+  const [reactionsState, updateReactionsState] = createStore<NoteReactionsState>(
+    initReactionState()
+  );
+
+  createEffect(on(() => accountStore.resetReactionStates, (reset) => {
+    if (!reset) return;
+
+    updateReactionsState({
+      liked: false,
+      reposted: false,
+      replied: false,
+      zapped: false,
+    });
+  }))
 
   createEffect(on(naddr, () => {
     clearArticle();

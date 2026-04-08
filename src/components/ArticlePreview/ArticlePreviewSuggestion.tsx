@@ -1,5 +1,5 @@
 // import { A } from '@solidjs/router';
-import { batch, Component, createEffect, createSignal, For, Show } from 'solid-js';
+import { batch, Component, createEffect, createSignal, For, on, Show } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import { wordsPerMinute } from '../../constants';
 import { CustomZapInfo, useAppContext } from '../../contexts/AppContext';
@@ -39,7 +39,7 @@ const ArticlePreviewSuggestion: Component<ArticleProps> = (props) => {
   const media = useMediaContext();
   const settings = useSettingsContext();
 
-  const [reactionsState, updateReactionsState] = createStore<NoteReactionsState>({
+  const initReactionState = () => ({
     likes: props.article.likes || 0,
     liked: props.article.noteActions?.liked || false,
     reposts: props.article.reposts || 0,
@@ -60,6 +60,21 @@ const ArticlePreviewSuggestion: Component<ArticleProps> = (props) => {
     topZapsFeed: [],
     quoteCount: 0,
   });
+
+  const [reactionsState, updateReactionsState] = createStore<NoteReactionsState>(
+    initReactionState()
+  );
+
+  createEffect(on(() => accountStore.resetReactionStates, (reset) => {
+    if (!reset) return;
+
+    updateReactionsState({
+      liked: false,
+      reposted: false,
+      replied: false,
+      zapped: false,
+    });
+  }))
 
   let latestTopZap: string = '';
   let latestTopZapFeed: string = '';

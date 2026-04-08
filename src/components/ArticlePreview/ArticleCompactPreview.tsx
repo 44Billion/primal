@@ -1,5 +1,5 @@
 import { A, useNavigate } from '@solidjs/router';
-import { batch, Component, createEffect, createSignal, JSXElement, Show } from 'solid-js';
+import { batch, Component, createEffect, createSignal, JSXElement, on, Show } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import { wordsPerMinute } from '../../constants';
 import { CustomZapInfo, useAppContext } from '../../contexts/AppContext';
@@ -44,7 +44,7 @@ const ArticleCompactPreview: Component<{
   const settings = useSettingsContext();
   const navigate = props.noLinks === 'links' ? () => { } : useNavigate();
 
-  const [reactionsState, updateReactionsState] = createStore<NoteReactionsState>({
+  const initReactionState = () => ({
     likes: props.article.likes || 0,
     liked: props.article.noteActions?.liked || false,
     reposts: props.article.reposts || 0,
@@ -65,6 +65,21 @@ const ArticleCompactPreview: Component<{
     topZapsFeed: [],
     quoteCount: 0,
   });
+
+  const [reactionsState, updateReactionsState] = createStore<NoteReactionsState>(
+    initReactionState()
+  );
+
+  createEffect(on(() => accountStore.resetReactionStates, (reset) => {
+    if (!reset) return;
+
+    updateReactionsState({
+      liked: false,
+      reposted: false,
+      replied: false,
+      zapped: false,
+    });
+  }))
 
   let latestTopZap: string = '';
   let latestTopZapFeed: string = '';

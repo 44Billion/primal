@@ -1,4 +1,4 @@
-import { batch, Component, For, Show } from 'solid-js';
+import { batch, Component, createEffect, For, on, Show } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import { CustomZapInfo, useAppContext } from '../../contexts/AppContext';
 import { useThreadContext } from '../../contexts/ThreadContext';
@@ -26,7 +26,7 @@ const SimpleArticlePreview: Component<{
   const app = useAppContext();
   const thread = useThreadContext();
 
-  const [reactionsState, updateReactionsState] = createStore<NoteReactionsState>({
+  const initReactionState = () => ({
     likes: props.article.likes || 0,
     liked: props.article.noteActions?.liked || false,
     reposts: props.article.reposts || 0,
@@ -47,6 +47,21 @@ const SimpleArticlePreview: Component<{
     topZapsFeed: [],
     quoteCount: 0,
   });
+
+  const [reactionsState, updateReactionsState] = createStore<NoteReactionsState>(
+    initReactionState()
+  );
+
+  createEffect(on(() => accountStore.resetReactionStates, (reset) => {
+    if (!reset) return;
+
+    updateReactionsState({
+      liked: false,
+      reposted: false,
+      replied: false,
+      zapped: false,
+    });
+  }))
 
   let latestTopZap: string = '';
   let latestTopZapFeed: string = '';

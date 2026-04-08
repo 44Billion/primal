@@ -1,5 +1,5 @@
 // import { A } from '@solidjs/router';
-import { batch, Component, createEffect, Match, onMount, Show, Switch } from 'solid-js';
+import { batch, Component, createEffect, Match, on, onMount, Show, Switch } from 'solid-js';
 import { PrimalNote, PrimalUser, TopZap, ZapOption } from '../../types/primal';
 import ParsedNote from '../ParsedNote/ParsedNote';
 import NoteFooter from './NoteFooter/NoteFooter';
@@ -96,7 +96,7 @@ const Note: Component<NoteProps> = (props) => {
     threadContext?.actions.setPrimaryNote(note);
   };
 
-  const [reactionsState, updateReactionsState] = createStore<NoteReactionsState>({
+  const initReactionState = () => ({
     likes: props.note.post.likes,
     liked: props.note.post.noteActions.liked,
     reposts: props.note.post.reposts,
@@ -117,6 +117,21 @@ const Note: Component<NoteProps> = (props) => {
     topZapsFeed: [],
     quoteCount: props.quoteCount || 0,
   });
+
+  const [reactionsState, updateReactionsState] = createStore<NoteReactionsState>(
+    initReactionState()
+  );
+
+  createEffect(on(() => accountStore.resetReactionStates, (reset) => {
+    if (!reset) return;
+
+    updateReactionsState({
+      liked: false,
+      reposted: false,
+      replied: false,
+      zapped: false,
+    });
+  }))
 
   let noteContextMenu: HTMLDivElement | undefined;
 

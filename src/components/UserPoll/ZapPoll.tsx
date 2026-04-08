@@ -1,4 +1,4 @@
-import { batch, Component, createSignal, For, Match, onMount, Show, Switch } from "solid-js";
+import { batch, Component, createEffect, createSignal, For, Match, on, onMount, Show, Switch } from "solid-js";
 import { hookForDev } from "../../lib/devTools";
 
 import styles from './UserPoll.module.scss';
@@ -41,7 +41,7 @@ const ZapPoll: Component<UserPollProps> = (props) => {
 
   const pollType = () => props.pollType || 'feed';
 
-  const [reactionsState, updateReactionsState] = createStore<NoteReactionsState>({
+  const initReactionState = () => ({
     likes: props.poll.stats?.likes || 0,
     liked: props.poll.noteActions?.liked || false,
     reposts: props.poll.stats?.reposts || 0,
@@ -62,6 +62,21 @@ const ZapPoll: Component<UserPollProps> = (props) => {
     topZapsFeed: [],
     quoteCount: 0,
   });
+
+  const [reactionsState, updateReactionsState] = createStore<NoteReactionsState>(
+    initReactionState()
+  );
+
+  createEffect(on(() => accountStore.resetReactionStates, (reset) => {
+    if (!reset) return;
+
+    updateReactionsState({
+      liked: false,
+      reposted: false,
+      replied: false,
+      zapped: false,
+    });
+  }))
 
   let noteContextMenu: HTMLDivElement | undefined;
 
