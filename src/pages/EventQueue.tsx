@@ -28,6 +28,7 @@ import { sendSignedEvent } from '../lib/notes';
 import { saveEventQueue } from '../lib/localStore';
 import GenericEvent from '../components/Events/GenericEvent';
 import { signEvent } from '../lib/nostrAPI';
+import { isDev } from '../utils';
 
 const EventQueuePage: Component = () => {
   const intl = useIntl();
@@ -323,6 +324,8 @@ const EventQueuePage: Component = () => {
 
   const eventQueueLength = () => accountStore.eventQueue.filter(e => e.kind !== Kind.Settings).length;
 
+  const relevantSelected = () => queuedEvents.filter(qe => (isDev() || qe.event.kind !== Kind.Settings) && qe.selected);
+
   return (
     <div class={styles.settingsContainer}>
       <PageTitle title={intl.formatMessage(tEventQueue.title)} />
@@ -371,7 +374,7 @@ const EventQueuePage: Component = () => {
         <div class={styles.eventList}>
           <For each={queuedEvents}>
             {queuedEvent =>
-              <Show when={queuedEvent.event.kind !== Kind.Settings}>
+              <Show when={isDev() || queuedEvent.event.kind !== Kind.Settings}>
                 <div class={styles.queueItem}>
                   <div class={styles.check}>
                     <CheckBox
@@ -393,11 +396,11 @@ const EventQueuePage: Component = () => {
         <div class={styles.actionFooter}>
           <ButtonSecondary
             onClick={abortSelected}
-            disabled={queuedEvents.filter(qe => qe.selected).length === 0}
+            disabled={relevantSelected().length === 0}
           >Abort Selected</ButtonSecondary>
           <ButtonPrimary
             onClick={retrySelected}
-            disabled={queuedEvents.filter(qe => qe.selected).length === 0}
+            disabled={relevantSelected().length === 0}
           >Retry Selected</ButtonPrimary>
         </div>
       </div>
