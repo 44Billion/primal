@@ -212,6 +212,11 @@ const NoteImage: Component<{
         data-thumb-src={thumbSrc()}
         data-ratio={ratio()}
         target="_blank"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('CLICK IMAGE');
+        }}
       >
         <div class={props.seeMore ? styles.seeMore : styles.hidden}>
           <div>+{props.seeMore || '0'}</div>
