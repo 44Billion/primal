@@ -321,14 +321,14 @@ const EventQueuePage: Component = () => {
     });
   }
 
-
+  const eventQueueLength = () => accountStore.eventQueue.filter(e => e.kind !== Kind.Settings).length;
 
   return (
     <div class={styles.settingsContainer}>
       <PageTitle title={intl.formatMessage(tEventQueue.title)} />
 
       <PageCaption>
-        <div>{intl.formatMessage(tEventQueue.caption, { number: accountStore.eventQueue.length })}</div>
+        <div>{intl.formatMessage(tEventQueue.caption, { number: eventQueueLength() })}</div>
       </PageCaption>
 
       <Wormhole to="search_section">
@@ -347,7 +347,7 @@ const EventQueuePage: Component = () => {
         </Show>
         <div class={styles.eventQueueHeader}>
           <Show
-            when={accountStore.eventQueue.length > 0}
+            when={eventQueueLength() > 0}
             fallback={
               <div class={styles.label}>
                 {intl.formatMessage(tEventQueue.empty)}
@@ -371,20 +371,22 @@ const EventQueuePage: Component = () => {
         <div class={styles.eventList}>
           <For each={queuedEvents}>
             {queuedEvent =>
-              <div class={styles.queueItem}>
-                <div class={styles.check}>
-                  <CheckBox
-                    checked={queuedEvent.selected}
-                    onChange={() => {
-                      setQueuedEvents(ev => ev.event.id === queuedEvent.event.id, 'selected', (v) => !v);
-                    }}
+              <Show when={queuedEvent.event.kind !== Kind.Settings}>
+                <div class={styles.queueItem}>
+                  <div class={styles.check}>
+                    <CheckBox
+                      checked={queuedEvent.selected}
+                      onChange={() => {
+                        setQueuedEvents(ev => ev.event.id === queuedEvent.event.id, 'selected', (v) => !v);
+                      }}
+                    />
+                  </div>
+                  <GenericEvent
+                    event={queuedEvent.event}
+                    onResign={() => retrySigning(queuedEvent.event)?.catch(e => {})}
                   />
                 </div>
-                <GenericEvent
-                  event={queuedEvent.event}
-                  onResign={() => retrySigning(queuedEvent.event)?.catch(e => {})}
-                />
-              </div>
+              </Show>
             }
           </For>
         </div>
