@@ -5,7 +5,7 @@ import { PollVote, sanitize } from "../lib/notes";
 import { MegaFeedPage, MegaRepostInfo, NostrEvent, NostrNoteContent, PrimalArticle, PrimalDraft, PrimalNote, PrimalUser, PrimalUserPoll, PrimalZap, TopZap, UserStats } from "../types/primal";
 import { convertToUser } from "./profile";
 import { now, parseBolt11, selectRelayTags } from "../utils";
-import { logError } from "../lib/logger";
+import { logError, logWarning } from "../lib/logger";
 import { StreamingData } from "../lib/streaming";
 
 
@@ -48,7 +48,13 @@ export const encodeCoordinate = (event: NostrNoteContent, forceKind?: Kind) => {
 
 export const extractRepostInfo: MegaRepostInfo = (page, message) => {
   const user = page?.users[message.pubkey];
-  const userMeta = JSON.parse(user?.content || '{}');
+  let userMeta: any = {};
+  try {
+    userMeta = JSON.parse(user?.content || '{}');
+
+  } catch (e) {
+    logWarning('Bad user metadata: ', e);
+  }
   const stat = page?.noteStats[message.id];
 
   const eventPointer: nip19.EventPointer ={
