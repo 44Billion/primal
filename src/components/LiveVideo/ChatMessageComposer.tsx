@@ -30,6 +30,7 @@ type EmojiOption = {
 const ChatMessageComposer: Component<{
   id?: string,
   sendMessage: (message: string) => Promise<boolean>,
+  hidden?: boolean,
 }> = (props) => {
 
   const profile = useProfileContext();
@@ -596,54 +597,56 @@ const ChatMessageComposer: Component<{
 
   return (
     <div class={styles.newMessage} ref={newMessageWrapper} >
-      <textarea
-        ref={newMessageInput}
-        data-min-rows={2}
-        onFocus={() => setInputFocused(true)}
-        onBlur={() => setInputFocused(false)}
-        onInput={onInput}
-        placeholder={intl.formatMessage(tMessages.sendComment)}
-      ></textarea>
+      <Show when={!props.hidden}>
+        <textarea
+          ref={newMessageInput}
+          data-min-rows={2}
+          onFocus={() => setInputFocused(true)}
+          onBlur={() => setInputFocused(false)}
+          onInput={onInput}
+          placeholder={intl.formatMessage(tMessages.sendComment)}
+        ></textarea>
 
-      <Show when={isMentioning()}>
-        <div
-          id="mention-auto"
-          class={styles.searchSuggestions}
-          ref={mentionOptions}
-        >
-          <For each={search?.users}>
-            {(user, index) => (
-              <SearchOption
-                title={userName(user)}
-                description={user.nip05}
-                icon={<Avatar user={user} size="xs" />}
-                statNumber={profile?.profileHistory.stats[user.pubkey]?.followers_count || search?.scores[user.pubkey]}
-                statLabel={intl.formatMessage(tSearch.followers)}
-                onClick={() => selectUser(user)}
-                highlighted={highlightedUser() === index()}
-              />
-            )}
-          </For>
-        </div>
-      </Show>
+        <Show when={isMentioning()}>
+          <div
+            id="mention-auto"
+            class={styles.searchSuggestions}
+            ref={mentionOptions}
+          >
+            <For each={search?.users}>
+              {(user, index) => (
+                <SearchOption
+                  title={userName(user)}
+                  description={user.nip05}
+                  icon={<Avatar user={user} size="xs" />}
+                  statNumber={profile?.profileHistory.stats[user.pubkey]?.followers_count || search?.scores[user.pubkey]}
+                  statLabel={intl.formatMessage(tSearch.followers)}
+                  onClick={() => selectUser(user)}
+                  highlighted={highlightedUser() === index()}
+                />
+              )}
+            </For>
+          </div>
+        </Show>
 
-      <Show when={isEmojiInput() && emojiQuery().length > emojiSearchLimit}>
-        <div
-          class={styles.emojiSuggestions}
-          ref={emojiOptions}
-        >
-          <For each={emojiResults}>
-            {(emoji, index) => (
-              <button
-              id={`${instanceId}-${index()}`}
-              class={`${styles.emojiOption} ${highlightedEmoji() === index() ? styles.highlight : ''}`}
-              onClick={() => selectEmoji(emoji)}
-              >
-                {emoji.name}
-              </button>
-            )}
-          </For>
-        </div>
+        <Show when={isEmojiInput() && emojiQuery().length > emojiSearchLimit}>
+          <div
+            class={styles.emojiSuggestions}
+            ref={emojiOptions}
+          >
+            <For each={emojiResults}>
+              {(emoji, index) => (
+                <button
+                id={`${instanceId}-${index()}`}
+                class={`${styles.emojiOption} ${highlightedEmoji() === index() ? styles.highlight : ''}`}
+                onClick={() => selectEmoji(emoji)}
+                >
+                  {emoji.name}
+                </button>
+              )}
+            </For>
+          </div>
+        </Show>
       </Show>
     </div>
   )

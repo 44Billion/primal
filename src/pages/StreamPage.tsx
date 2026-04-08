@@ -1164,41 +1164,48 @@ const StreamPage: Component = () => {
               </Show>
             </div>
 
-            <Show
-              when={initialLoadDone()}
+            <Switch
               fallback={<div class={styles.zapsSkeleton}><div></div></div>}
             >
-              <div class={`${styles.topZaps} ${topZaps.length === 0 ? styles.centered : ''}`}>
-                <div class={`${styles.zapList} ${topZaps.length === 0 ? styles.emptyZaps : ''}`}>
-                  <div class={styles.firstZap}>
-                    {renderFirstZap()}
-                  </div>
-                  <Show when={topZaps.length > 0}>
-                    <div class={styles.other}>
-                      {renderRestZaps()}
+              <Match
+                when={noStream() === 'none' || !accountStore.publicKey}
+              >
+                <div class={styles.topZaps}></div>
+              </Match>
+              <Match
+                when={initialLoadDone()}
+              >
+                <div class={`${styles.topZaps} ${topZaps.length === 0 ? styles.centered : ''}`}>
+                  <div class={`${styles.zapList} ${topZaps.length === 0 ? styles.emptyZaps : ''}`}>
+                    <div class={styles.firstZap}>
+                      {renderFirstZap()}
                     </div>
-                  </Show>
-                </div>
-                <div class={`${styles.zapStats} ${topZaps.length === 0 ? styles.centeredZaps : ''}`}>
-                  <div class={`${styles.statsLine} ${topZaps.length === 0 ? styles.noStatsLine : ''}`}>
-                    <div class={styles.totalZaps}>Total {totalZaps()} zaps:</div>
-                    <div class={styles.totalSats}>
+                    <Show when={topZaps.length > 0}>
+                      <div class={styles.other}>
+                        {renderRestZaps()}
+                      </div>
+                    </Show>
+                  </div>
+                  <div class={`${styles.zapStats} ${topZaps.length === 0 ? styles.centeredZaps : ''}`}>
+                    <div class={`${styles.statsLine} ${topZaps.length === 0 ? styles.noStatsLine : ''}`}>
+                      <div class={styles.totalZaps}>Total {totalZaps()} zaps:</div>
+                      <div class={styles.totalSats}>
+                        <div class={styles.zapIcon}></div>
+                        {humanizeNumber(totalSats(), false)}
+                      </div>
+                    </div>
+                    <button
+                      class={styles.zapButton}
+                      onMouseDown={startZap}
+                      onMouseUp={commitZap}
+                    >
                       <div class={styles.zapIcon}></div>
-                      {humanizeNumber(totalSats(), false)}
-                    </div>
+                      {topZaps.length > 0 ? 'Zap Now' : 'Be the first to zap this stream!'}
+                    </button>
                   </div>
-                  <button
-                    class={styles.zapButton}
-                    onMouseDown={startZap}
-                    onMouseUp={commitZap}
-                  >
-                    <div class={styles.zapIcon}></div>
-                    {topZaps.length > 0 ? 'Zap Now' : 'Be the first to zap this stream!'}
-                  </button>
                 </div>
-              </div>
-
-            </Show>
+              </Match>
+            </Switch>
 
             <div class={styles.summary}>
               {parseSummary(streamData.summary || '')}
@@ -1322,25 +1329,39 @@ const StreamPage: Component = () => {
         </div>
 
         <div class={styles.chatMessages}>
-          <Show
-            when={initialLoadDone()}
-            fallback={<div class={styles.chatSkeletons}>
-              <For each={new Array(20)}>
-                {() => <div style={`height: ${38 + Math.floor(Math.random() * 42)}px`}></div>}
-              </For>
-            </div>}
+          <Switch
+            fallback={
+              <div class={styles.chatSkeletons}>
+                <For each={new Array(20)}>
+                  {() => <div style={`height: ${38 + Math.floor(Math.random() * 42)}px`}></div>}
+                </For>
+              </div>
+            }
           >
-            <For each={events.slice(0, chatMessageLimit())}>
-              {event => renderEvent(event)}
-            </For>
+            <Match when={noStream() === 'none'}>
+              <div></div>
+            </Match>
 
-            <Paginator
-              loadNextPage={() => {
-                setChatMessageLimit(l => l + CHAT_PAGE_SIZE)
-              }}
-              isSmall={true}
-            />
-          </Show>
+            <Match when={!accountStore.publicKey}>
+              <div class={styles.loginToChat}>
+                <button onClick={() => showGetStarted()}>Login to see the chat</button>
+              </div>
+            </Match>
+
+            <Match when={initialLoadDone()}>
+              <For each={events.slice(0, chatMessageLimit())}>
+                {event => renderEvent(event)}
+              </For>
+
+              <Paginator
+                loadNextPage={() => {
+                  setChatMessageLimit(l => l + CHAT_PAGE_SIZE)
+                }}
+                isSmall={true}
+              />
+            </Match>
+          </Switch>
+
 
           <Show when={selectedChatMesage()}>
             <ChatMessageDetails
@@ -1428,6 +1449,7 @@ const StreamPage: Component = () => {
         <div class={styles.chatInput}>
           <ChatMessageComposer
             sendMessage={sendMessage}
+            hidden={noStream() !== 'found' || !accountStore.publicKey}
           />
         </div>
       </div>

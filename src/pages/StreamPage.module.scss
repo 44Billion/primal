@@ -801,3 +801,19 @@
     animation: skeleton-fade 2500ms linear infinite;
   }
 }
+
+.loginToChat {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  button {
+    color: var(--text-secondary);
+
+    &:hover {
+      color: var(--text-primary);
+    }
+  }
+}
