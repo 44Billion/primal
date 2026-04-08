@@ -167,7 +167,7 @@ const Bookmarks: Component = () => {
 
         <Transition name="slide-fade">
           <Show
-            when={!store.fetchingInProgress}
+            when={!store.fetchingInProgress || store.notes.length > 0 || store.reads.length > 0}
           >
             <div>
               <Switch>
