@@ -121,6 +121,7 @@ import { fetchPeople } from "../megaFeeds";
 import { appSigner, getAppSK, setAppSigner } from "../lib/PrimalNip46";
 import { clearNWC } from "../pages/Settings/NostrWalletConnect";
 import { ConfirmDialogInfo } from "../components/ConfirmModal/ConfirmModal";
+import { emptyUser } from "./profile";
 
 
 export type FollowData = {
@@ -548,7 +549,7 @@ export const initAccountStore: AccountStore = {
 
     const { users } = await fetchPeople([pubkey], subId);
 
-    const user = users[0];
+    const user = users[0] || emptyUser(pubkey);
 
     updateAccountStore('activeUser', () => ({ ...user }));
     setStoredProfile(user);
@@ -2405,9 +2406,15 @@ export const initAccountStore: AccountStore = {
   const handleUserProfileEvent = (content: NostrEventContent) => {
     if (content?.content) {
       if (content.kind === Kind.Metadata) {
-        let user = JSON.parse(content.content);
+        let user = emptyUser(content.pubkey);
+        try {
+          user = JSON.parse(content.content);
+          user.pubkey = content.pubkey;
+        } catch (e) {
+          logWarning('Bad user metadata: ', e);
+          user = emptyUser(content.pubkey);
+        }
 
-        user.pubkey = content.pubkey;
 
         updateAccountStore('activeUser', () => ({...user, pubkey: content.pubkey}));
         setStoredProfile(user);
