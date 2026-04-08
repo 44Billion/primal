@@ -47,7 +47,7 @@ const NoteVideo: Component<{
 
   const observer = new IntersectionObserver(entries => {
     entries.forEach((entry) => {
-      const video = entry.target as HTMLVideoElement;
+      const video = videoEl as HTMLVideoElement;
 
       if (entry.isIntersecting && video.paused) {
         video.muted = true;
