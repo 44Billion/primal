@@ -663,7 +663,16 @@ const ChatMessage: Component<{
       {(token) => {
         return (
           <span data-url={token}>
-            <a link class={styles.mutedLinks} href={token} target="_blank" >{token}</a>
+            <a
+              link
+              class={styles.mutedLinks}
+              href={token}
+              target="_blank"
+              onClick={e => {
+                e.stopPropagation();
+                return true;
+              }}
+            >{token}</a>
           </span>
         );
       }}
@@ -710,6 +719,10 @@ const ChatMessage: Component<{
                 href={vn ? `/${vn}/${urlEncode(identifier)}` : `/a/${id}`}
                 class={styles.eventMention}
                 target="_blank"
+                onClick={e => {
+                  e.stopPropagation();
+                  return true;
+                }}
               >
                 Article <Show when={author || vn}><span> by {userName(author) || vn}</span></Show>
               </a>;
@@ -721,6 +734,10 @@ const ChatMessage: Component<{
                 href={`/a/${id}`}
                 class={styles.eventMention}
                 target="_blank"
+                onClick={e => {
+                  e.stopPropagation();
+                  return true;
+                }}
               >
                 Stream <Show when={author || vn}><span> by {userName(author) || vn}</span></Show>
               </a>;
@@ -730,6 +747,10 @@ const ChatMessage: Component<{
               href={`/a/${id}`}
               class={styles.eventMention}
               target="_blank"
+              onClick={e => {
+                e.stopPropagation();
+                return true;
+              }}
             >
               Article
             </a>;
@@ -739,6 +760,10 @@ const ChatMessage: Component<{
             href={`/a/${id}`}
             class={styles.eventMention}
             target="_blank"
+            onClick={e => {
+              e.stopPropagation();
+              return true;
+            }}
           >
             Event
           </a>;
@@ -820,6 +845,10 @@ const ChatMessage: Component<{
               href={`/e/${id}`}
               class={styles.eventMention}
               target="_blank"
+              onClick={e => {
+                e.stopPropagation();
+                return true;
+              }}
             >
               Note
             </a>;
@@ -839,6 +868,10 @@ const ChatMessage: Component<{
               href={`/e/${short}`}
               class={styles.eventMention}
               target="_blank"
+              onClick={e => {
+                e.stopPropagation();
+                return true;
+              }}
             >
               Note  <Show when={noteAuthor}><span> by {userName(noteAuthor)}</span></Show>
             </a>;
@@ -851,6 +884,10 @@ const ChatMessage: Component<{
             href={`/e/${id}`}
             class={styles.eventMention}
             target="_blank"
+            onClick={e => {
+              e.stopPropagation();
+              return true;
+            }}
           >
             Note
           </a>;
@@ -909,8 +946,25 @@ const ChatMessage: Component<{
 
           if (!props.noLinks) {
             link = !user ?
-              <>{prefix}<a href={path} target='_blank'>@{label}</a>{end}</> :
-              <>{prefix}<a href={path} target='_blank'>@{userName(user)}</a>{end}</>;
+              <>{prefix}<a
+                href={path}
+                target='_blank'
+                onClick={e => {
+                  e.stopPropagation();
+                  return true;
+                }}>
+                  @{label}
+                </a>{end}</> :
+              <>{prefix}<a
+                href={path}
+                target='_blank'
+                onClick={e => {
+                  e.stopPropagation();
+                  return true;
+                }}
+              >
+                @{userName(user)}
+              </a>{end}</>;
           }
           return link;
         } catch (e) {
@@ -936,7 +990,14 @@ const ChatMessage: Component<{
 
         const embeded = props.noLinks === 'text' ?
           <span>#{term}</span> :
-          <a href={`/search/%23${term}`}>#{term}</a>;
+          <a
+            href={`/search/%23${term}`}
+            target="_blank"
+            onClick={e => {
+              e.stopPropagation();
+              return true;
+            }}
+            >#{term}</a>;
 
         return <span class="whole"> {embeded}{end}</span>;
       }}
