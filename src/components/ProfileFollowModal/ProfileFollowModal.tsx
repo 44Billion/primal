@@ -163,7 +163,7 @@ const ProfileFollowModal: Component<{
                   <div class={styles.mutedProfile}>
                     {intl.formatMessage(
                       t.noFollows,
-                      { name: profile?.userProfile ? userName(profile?.userProfile) : profile?.profileKey },
+                      { name: userName(profile?.userProfile, profile?.profileKey) },
                     )}
                   </div>
                 }>
@@ -203,7 +203,7 @@ const ProfileFollowModal: Component<{
                     <div class={styles.mutedProfile}>
                       {intl.formatMessage(
                         t.noFollowers,
-                        { name: profile?.userProfile ? userName(profile?.userProfile) : profile?.profileKey },
+                        { name: userName(profile?.userProfile, profile?.profileKey) },
                       )}
                     </div>
                   }
