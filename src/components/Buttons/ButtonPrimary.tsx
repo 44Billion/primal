@@ -11,6 +11,7 @@ const ButtonPrimary: Component<{
   disabled?: boolean,
   loading?: boolean,
   type?: 'button' | 'submit' | 'reset' | undefined,
+  ref?: HTMLButtonElement
 }> = (props) => {
   return (
     <Button
@@ -19,6 +20,7 @@ const ButtonPrimary: Component<{
       onClick={props.onClick}
       disabled={props.disabled}
       type={props.type}
+      ref={props.ref}
     >
       <Show
         when={props.loading}

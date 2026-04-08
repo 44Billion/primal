@@ -1,5 +1,5 @@
 import { useIntl } from '@cookbook/solid-intl';
-import { Component, Show } from 'solid-js';
+import { Component, createEffect, Show } from 'solid-js';
 import Modal from '../Modal/Modal';
 
 import { confirmDefaults as t } from '../../translations';
@@ -21,10 +21,20 @@ const ConfirmAlternativeModal: Component<{
   onConfirm?: () => void,
   onCancel?: () => void,
   onAbort?: () => void,
+  onOpen?: () => void,
   hideCancelButton?: boolean,
 }> = (props) => {
 
   const intl = useIntl();
+
+  let confirmButton: HTMLButtonElement | undefined;
+
+  createEffect(() => {
+    if (props.open) {
+      confirmButton?.focus();
+      props.onOpen?.();
+    }
+  })
 
   return (
     <AdvancedSearchDialog
@@ -44,6 +54,7 @@ const ConfirmAlternativeModal: Component<{
         <div class={styles.feedConfirmationActions}>
           <Show when={props.onConfirm}>
             <ButtonPrimary
+              ref={confirmButton}
               onClick={props.onConfirm}
             >
               {props.confirmLabel || intl.formatMessage(t.confirm)}

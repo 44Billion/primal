@@ -143,7 +143,7 @@ const EditBox: Component<{
   const [referencedArticles, setReferencedArticles] = createStore<Record<string, FeedPage>>();
 
   const [isConfirmEditorClose, setConfirmEditorClose] = createSignal(false);
-  const [isConfirmEditorRemovePoll, setConfirmEditorRemovePoll] = createSignal(false);
+  const [ignoreEsc, setIgnoreEsc] = createSignal(false);
 
   const [fileToUpload, setFileToUpload] = createSignal<File | undefined>();
 
@@ -674,6 +674,10 @@ const EditBox: Component<{
   });
 
   const onEscape = (e: KeyboardEvent) => {
+    if (ignoreEsc()) {
+      setIgnoreEsc(false);
+      return;
+    }
     if (isConfirmEditorClose()) return;
 
     e.stopPropagation();
@@ -2504,6 +2508,7 @@ const EditBox: Component<{
         }}
         onCancel={() => {
           setConfirmEditorClose(false);
+          setIgnoreEsc(true);
           if (isCreatingPoll()) {
             const input = document.documentElement.querySelector("[data-input-id=question]") as HTMLTextAreaElement | undefined;
             input?.focus();
