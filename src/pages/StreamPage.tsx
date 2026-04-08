@@ -1,4 +1,4 @@
-import { batch, Component, createEffect, createSignal, For, on, onCleanup, Show } from 'solid-js';
+import { batch, Component, createEffect, createSignal, For, Match, on, onCleanup, Show, Switch } from 'solid-js';
 
 import styles from './StreamPage.module.scss';
 import { toast as t } from '../translations';
@@ -12,7 +12,7 @@ import { fetchKnownProfiles } from '../lib/profile';
 import { nip19 } from '../lib/nTools';
 import { ProfilePointer } from 'nostr-tools/lib/types/nip19';
 import Avatar from '../components/Avatar/Avatar';
-import { emptyUser, userName } from '../stores/profile';
+import { userName } from '../stores/profile';
 import { humanizeNumber } from '../lib/stats';
 import FollowButton from '../components/FollowButton/FollowButton';
 import { createStore } from 'solid-js/store';
@@ -63,6 +63,8 @@ const StreamPage: Component = () => {
 
   const [openChatModeMenu, setOpenChatModeMenu] = createSignal(false);
   const [chatMode, setChatMode] = createSignal<string>('moderated');
+
+  const [noStream, setNoStream] = createSignal<'pending' | 'found' | 'none'>('pending');
 
   let subId = '';
 
@@ -152,13 +154,21 @@ const StreamPage: Component = () => {
 
   const [streamData, setStreamData] = createStore<StreamingData>({});
 
-  const resolveStreamingData = async (id: string, pubkey: string | undefined) => {
+
+  const resolveStreamingData = async (id: string) => {
     let data = await findStreamByHost(id, getHex());
 
     if (!data.id) {
       data = await getStreamingEvent(id, getHex());
     }
 
+    if (!data.id) {
+      console.log('SET NONE')
+      setNoStream('none');
+      return;
+    }
+
+    setNoStream('found');
     setStreamData(() => data || {});
   }
 
@@ -474,6 +484,8 @@ const StreamPage: Component = () => {
   }
 
   createEffect(on(getHex, (pubkey) => {
+    setNoStream('pending');
+    if (!pubkey) return;
     const stremId = streamId();
 
     const stream = media?.actions.getStreamByIdentifier(stremId);
@@ -482,7 +494,7 @@ const StreamPage: Component = () => {
       setStreamData(stream);
     }
 
-    stremId && resolveStreamingData(stremId, pubkey);
+    stremId && resolveStreamingData(stremId);
   }));
 
   createEffect(() => {
@@ -1068,32 +1080,48 @@ const StreamPage: Component = () => {
     <div class={styles.streamingPage}>
       <div class={`${styles.streamingMain} ${!showLiveChat() ? styles.fullWidth : ''}`}>
         <div class={styles.streamingHeader}>
-          <Show when={host()}>
-            <div class={styles.streamerInfo}>
-              <a href={app?.actions.profileLink(host()?.pubkey)}>
-                <Avatar user={host()} size="s50" />
-              </a>
-              <div class={styles.userInfo}>
-                <div class={styles.userName}>
-                  {userName(host())}
-                </div>
-                <div class={styles.userStats}>
-                  {humanizeNumber(host()?.userStats?.followers_count || 0)} followers
+          <Switch>
+            <Match when={noStream() === 'pending'}>
+              <div class={styles.streamerInfo}>
+              </div>
+            </Match>
+            <Match when={noStream() === 'none'}>
+              <div class={styles.streamerInfo}>
+                <div class={styles.userInfo}>
+                  <div class={styles.userName}>
+                    Stream not available
+                  </div>
                 </div>
               </div>
-            </div>
+            </Match>
 
-            <div class={styles.headerActions}>
-              <FollowButton person={host()} thick={true} />
+            <Match when={host()}>
+              <div class={styles.streamerInfo}>
+                <a href={app?.actions.profileLink(host()?.pubkey)}>
+                  <Avatar user={host()} size="s50" />
+                </a>
+                <div class={styles.userInfo}>
+                  <div class={styles.userName}>
+                    {userName(host())}
+                  </div>
+                  <div class={styles.userStats}>
+                    {humanizeNumber(host()?.userStats?.followers_count || 0)} followers
+                  </div>
+                </div>
+              </div>
 
-              <Show when={!showLiveChat()}>
-                <button class={styles.chatButton} onClick={() => setShowLiveChat(true)}>
-                  <div class={styles.chatIcon}></div>
-                </button>
-              </Show>
+              <div class={styles.headerActions}>
+                <FollowButton person={host()} thick={true} />
 
-            </div>
-          </Show>
+                <Show when={!showLiveChat()}>
+                  <button class={styles.chatButton} onClick={() => setShowLiveChat(true)}>
+                    <div class={styles.chatIcon}></div>
+                  </button>
+                </Show>
+
+              </div>
+            </Match>
+          </Switch>
         </div>
 
         <div ref={streamingContent} class={styles.streamContent}>
