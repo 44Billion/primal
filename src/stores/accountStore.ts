@@ -756,6 +756,8 @@ export const initAccountStore: AccountStore = {
     setTimeout(() => {
       updateAccountStore('resetReactionStates', false);
     }, 10);
+
+    void tryManagedLogin();
   };
 
   export const setSec = (sec: string | undefined, force?: boolean) => {
@@ -2403,13 +2405,37 @@ export const initAccountStore: AccountStore = {
       return;
     }
 
-    if (nostr) {
-      loginUsingExtension();
+    if (nostr) void tryManagedLogin();
+    else loginGuest();
+  }
+
+  let managedLoginPending = false;
+
+  const tryManagedLogin = async () => {
+    if (accountStore.publicKey || managedLoginPending) return;
+
+    const nostr = (window as Window & {
+      nostr?: { peekPublicKey?: () => Promise<string | undefined> };
+    }).nostr;
+    if (typeof nostr?.peekPublicKey !== 'function') {
+      loginGuest();
       return;
     }
 
-    loginGuest();
-  }
+    managedLoginPending = true;
+    try {
+      const key = await nostr.peekPublicKey();
+      if (/^[0-9a-f]{64}$/.test(key || '') && !accountStore.publicKey) {
+        await loginUsingExtension(0, key);
+      } else if (!accountStore.publicKey) {
+        loginGuest();
+      }
+    } catch {
+      if (!accountStore.publicKey) loginGuest();
+    } finally {
+      managedLoginPending = false;
+    }
+  };
 
   export const loginGuest = () => {
     setPublicKey(undefined);
@@ -2437,10 +2463,13 @@ export const initAccountStore: AccountStore = {
 
     try {
       setLoginType('extension');
-      let key = await Promise.race([
-        getPublicKey(),
-        timeoutPromiseResolve(3_000)
-      ]);
+      let key = pk;
+      if (!key) {
+        key = await Promise.race([
+          getPublicKey(),
+          timeoutPromiseResolve(3_000)
+        ]);
+      }
 
       if (key === undefined) {
         setTimeout(() => {
